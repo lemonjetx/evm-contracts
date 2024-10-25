@@ -75,7 +75,7 @@ contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
         uint256 fee = bet / 100; // 1% fee
         // if referrer exists, issue vault shares by 0.3% of bet
         if (referrer != address(0)) {
-            uint256 referrerReward = (bet * 30) / 100; // 30% of fee
+            uint256 referrerReward = (fee * 30) / 100; // 30% of fee
             _mintByAssets(referrer, referrerReward);
             emit ReferrerRewardIssued(referrer, msg.sender, referrerReward);
         }
