@@ -8,7 +8,7 @@ interface ILemonJet {
         uint256 indexed requestId, address indexed playerAddress, uint256 payout, uint256 randomNumber, uint256 x
     );
 
-    event ReferralRewardIssued(address indexed referral, address indexed player, uint256 rewardAmount);
+    event ReferrerRewardIssued(address indexed referrer, address indexed player, uint256 rewardAmount);
 
     error BetAmountAboveLimit(uint256);
     error BetAmountBelowLimit(uint256);

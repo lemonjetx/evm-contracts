@@ -47,20 +47,20 @@ contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
         referrals = IReferral(_referral);
     }
 
-    function play(uint256 bet, uint16 coef, address referral) external payable {
-        address _referral = _setReferralIfNotExists(referral);
-        _play(bet, coef, _referral);
+    function play(uint256 bet, uint16 coef, address referrer) external payable {
+        referrer = _setReferrerIfNotExists(referrer);
+        _play(bet, coef, referrer);
     }
 
     function play(uint256 bet, uint16 coef) external payable {
-        address referral = referrals.getReferral(tx.origin);
+        address referral = referrals.getReferrer(tx.origin);
         _play(bet, coef, referral);
     }
 
     /// @param bet is amount of tokens to play
     /// @param coef is multiplier of bet
-    /// @param referral is address of referrer (optional)
-    function _play(uint256 bet, uint16 coef, address referral) private {
+    /// @param referrer is address of referrer (optional)
+    function _play(uint256 bet, uint16 coef, address referrer) private {
         require(bet >= 1000, BetAmountBelowLimit(1000)); // required precision to get 0.1% of bet
         require(coef >= 1_01 && coef <= 5000_00, InvalidMultiplier()); // 1.01 <= coef <= 5000.00
         uint256 potentialWinnings = (bet * coef) / 100;
@@ -73,11 +73,11 @@ contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
         latestGames[msg.sender] = JetGame(uint224(potentialWinnings), uint24(calcThresholdForCoef(coef)), STARTED);
 
         uint256 fee = bet / 100; // 1% fee
-        // if referral exists, issue vault shares by 0.3% of bet
-        if (referral != address(0)) {
-            uint256 referralReward = (bet * 30) / 100; // 30% of fee
-            _mintByAssets(referral, referralReward);
-            emit ReferralRewardIssued(referral, msg.sender, referralReward);
+        // if referrer exists, issue vault shares by 0.3% of bet
+        if (referrer != address(0)) {
+            uint256 referrerReward = (bet * 30) / 100; // 30% of fee
+            _mintByAssets(referrer, referrerReward);
+            emit ReferrerRewardIssued(referrer, msg.sender, referrerReward);
         }
 
         // issue vault shares by 0.2% of bet
@@ -144,15 +144,15 @@ contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
         (requestId,) = requestRandomnessPayInNative(50_000, 0, 1, extraArgs);
     }
 
-    /// @param referral can only be set once
-    function _setReferralIfNotExists(address referral) private returns (address) {
-        // referral set for tx.origin
-        address _referral = referrals.getReferral(tx.origin);
-        if (referral != address(0) && _referral == address(0)) {
-            referrals.setReferral(referral);
-            return referral;
+    /// @param referrer_ can only be set once
+    function _setReferrerIfNotExists(address referrer_) private returns (address) {
+        // referrer set for tx.origin
+        address referrer = referrals.getReferrer(tx.origin);
+        if (referrer == address(0) && referrer_ != address(0)) {
+            referrals.setReferrer(referrer_);
+            return referrer_;
         } else {
-            return _referral;
+            return referrer;
         }
     }
 

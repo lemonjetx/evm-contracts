@@ -4,14 +4,14 @@ pragma solidity 0.8.28;
 interface IReferral {
     error ZeroAddressNotAllowed();
 
-    error ReferralAlreadySet();
+    error ReferrerAlreadySet();
 
     /**
-     * @dev Emitted when `referee` aka `tx.origin` have set a `referral` address
+     * @dev Emitted when `referee` aka `tx.origin` have set a `referrer` address
      */
-    event ReferralSettled(address indexed referee, address indexed referral);
+    event ReferrerSettled(address indexed referee, address indexed referrer);
 
-    function setReferral(address referral) external;
+    function setReferrer(address referral) external;
 
-    function getReferral(address referee) external view returns (address);
+    function getReferrer(address referee) external view returns (address);
 }
