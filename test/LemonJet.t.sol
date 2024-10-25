@@ -49,7 +49,7 @@ contract LemonJetTest is Test, HelperContract {
 
         address _player = ljtGame.requestIdToPlayer(requestId);
 
-        (uint256 potentialWinnings, uint256 threshold, uint8 statusBeforeRelease) = ljtGame.games(player);
+        (uint256 potentialWinnings, uint256 threshold, uint8 statusBeforeRelease) = ljtGame.latestGames(player);
         assertEq(potentialWinnings, (1 ether * 150) / 100);
         assertEq(statusBeforeRelease, 1);
         assertEq(_player, player);
@@ -60,7 +60,7 @@ contract LemonJetTest is Test, HelperContract {
 
         ljtGame.rawFulfillRandomWords(requestId, randomWords);
 
-        (,, uint8 statusAfterRelease) = ljtGame.games(player);
+        (,, uint8 statusAfterRelease) = ljtGame.latestGames(player);
 
         assertEq(statusAfterRelease, 2);
     }

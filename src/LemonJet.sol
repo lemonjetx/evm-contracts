@@ -21,7 +21,7 @@ contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
     uint256 private constant threshold = 1e7; // 1000_00_00
 
     mapping(address => JetGame) public latestGames;
-    mapping(uint256 => address) private requestIdToPlayer;
+    mapping(uint256 => address) public requestIdToPlayer;
 
     IReferral public immutable referrals;
     // 1 storage slot

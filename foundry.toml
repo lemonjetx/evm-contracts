@@ -17,10 +17,4 @@ sepolia = { key = "${ETHERSCAN_API_KEY}" }
 forge-std = { version = "1.9.3", url = "https://soldeer-revisions.s3.amazonaws.com/forge-std/1_9_3_30-09-2024_08:27:09_forge-std-1.9.zip" }
 "@chainlink-contracts" = "1.2.0"
 
-remappings = [
-    '@layerzerolabs/oft-evm/=lib/devtools/packages/oft-evm/',
-    '@layerzerolabs/oapp-evm/=lib/devtools/packages/oapp-evm/',
-    '@layerzerolabs/lz-evm-protocol-v2/=lib/layerzero-v2/packages/layerzero-v2/evm/protocol',
-]
-
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
