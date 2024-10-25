@@ -9,8 +9,6 @@ import {ILemonJet} from "./interfaces/ILemonJet.sol";
 import {Vault} from "./Vault.sol";
 import {IReferral} from "./interfaces/IReferral.sol";
 
-import {ILemonJetToken} from "./interfaces/ILemonJetToken.sol";
-
 contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
     using SafeERC20 for IERC20;
 
