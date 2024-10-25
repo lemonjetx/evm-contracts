@@ -22,8 +22,8 @@ contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
     mapping(uint256 => address) public requestIdToPlayer;
 
     IReferral public immutable referrals;
-    // 1 storage slot
 
+    // 1 storage slot
     struct JetGame {
         uint224 potentialWinnings;
         uint24 threshold; // always less than threshold (1000_00_00)
@@ -87,7 +87,7 @@ contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
         emit GameStarted(requestId, msg.sender, bet, coef);
     }
 
-    function calcThresholdForCoef(uint256 coef) public pure returns (uint256) {
+    function calcThresholdForCoef(uint256 coef) private pure returns (uint256) {
         uint256 baseThreshold = threshold / coef;
         uint256 adjustedThreshold = (baseThreshold * (100 - houseEdge)) / 100;
         return adjustedThreshold;
@@ -107,7 +107,9 @@ contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
 
         // check if a player has won
         if (randomNumber <= game.threshold) {
-            // winnings may exceed `maxWinAmount()` at the start of this play. It's acceptable.
+            /**
+             * @dev See {Vault-_payoutWin}.
+             */
             _payoutWin(player, payout);
         } else {
             payout = 0;

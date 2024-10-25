@@ -32,6 +32,7 @@ contract Vault is IVault, ERC4626Fees {
         returns (uint256)
     {
         uint256 shares = super.withdraw(assets, receiver, owner);
+        // mint fee in shares to reserve fund
         _mint(reserveFund, _reserveFundFee(shares));
         return shares;
     }
@@ -45,9 +46,12 @@ contract Vault is IVault, ERC4626Fees {
         returns (uint256)
     {
         uint256 assets = super.redeem(shares, receiver, owner);
+        // mint fee in shares to reserve fund
         _mint(reserveFund, _reserveFundFee(shares));
         return assets;
     }
+
+    /// @dev returns the maximum amount of underlying assets that can be payout as win in a single game.
 
     function maxWinAmount() public view returns (uint256) {
         return (totalAssets() * _maxPayoutPercentBasicPoints) / _BASIS_POINT_SCALE;
@@ -57,14 +61,16 @@ contract Vault is IVault, ERC4626Fees {
         _mint(receiver, convertToShares(assets));
     }
 
+    /// @dev winnings may exceed `maxWinAmount()` at the start of this play. It's acceptable.
     function _payoutWin(address receiver, uint256 assets) internal {
         IERC20(asset()).safeTransfer(receiver, assets);
         emit PayoutWin(receiver, assets);
     }
 
+    /// @dev extract `_exitFeeBasisPoints` from `shares` and mint `_reserveFundFeeBasisPoints` to the `reserveFund`
+    // actualy the (_exitFeeBasisPoints - _reserveFundFeeBasisPoints) fee is distributed to vault members
     function _reserveFundFee(uint256 shares) private pure returns (uint256) {
-        return (
-            ((shares * _BASIS_POINT_SCALE) / (_exitFeeBasisPoints + _BASIS_POINT_SCALE)) * _reserveFundFeeBasisPoints
-        ) / _BASIS_POINT_SCALE;
+        uint256 sharesWithoutExitFee = ((shares * _BASIS_POINT_SCALE) / (_exitFeeBasisPoints + _BASIS_POINT_SCALE));
+        return (sharesWithoutExitFee * _reserveFundFeeBasisPoints) / _BASIS_POINT_SCALE;
     }
 }
