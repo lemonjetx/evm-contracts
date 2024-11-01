@@ -64,7 +64,6 @@ contract Vault is IVault, ERC4626Fees {
     /// @dev winnings may exceed `maxWinAmount()` at the start of this play. It's acceptable.
     function _payoutWin(address receiver, uint256 assets) internal {
         IERC20(asset()).safeTransfer(receiver, assets);
-        emit PayoutWin(receiver, assets);
     }
 
     /// @dev extract `_exitFeeBasisPoints` from `shares` and mint `_reserveFundFeeBasisPoints` to the `reserveFund`
