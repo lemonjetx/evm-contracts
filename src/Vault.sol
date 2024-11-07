@@ -11,7 +11,6 @@ import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol
 
 contract Vault is IVault, ERC4626Fees {
     uint256 private constant _reserveFundFeeBasisPoints = 10; // 0.1%
-    uint256 private constant _maxPayoutPercentBasicPoints = 100; // 1%;
     address public immutable reserveFund;
 
     using SafeERC20 for IERC20;
@@ -53,8 +52,12 @@ contract Vault is IVault, ERC4626Fees {
 
     /// @dev returns the maximum amount of underlying assets that can be payout as win in a single game.
 
-    function maxWinAmount() public view returns (uint256) {
-        return (totalAssets() * _maxPayoutPercentBasicPoints) / _BASIS_POINT_SCALE;
+    function maxWinAmount(uint256 coef, uint256 threshold) public view returns (uint256) {
+        return (totalAssets() * _kellyCriteria(coef - 100, threshold)) / _BASIS_POINT_SCALE;
+    }
+
+    function _kellyCriteria(uint256 b, uint256 p) private pure returns (uint256) {
+        return ((100 * (10_000 - p)) / b) - p;
     }
 
     function _mintByAssets(address receiver, uint256 assets) internal {
