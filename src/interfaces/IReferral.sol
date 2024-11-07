@@ -5,6 +5,7 @@ interface IReferral {
     error ZeroAddressNotAllowed();
 
     error ReferrerAlreadySet();
+    error ReferrerEqualsReferee();
 
     /**
      * @dev Emitted when `referee` aka `tx.origin` have set a `referrer` address

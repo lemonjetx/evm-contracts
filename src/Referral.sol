@@ -14,6 +14,7 @@ contract Referral is IReferral {
     function setReferrer(address referrer) external {
         require(referrer != address(0), ZeroAddressNotAllowed());
         require(referrals[tx.origin] == address(0), ReferrerAlreadySet());
+        require(referrer != tx.origin, ReferrerEqualsReferee());
         referrals[tx.origin] = referrer;
         emit ReferrerSettled(tx.origin, referrer);
     }
