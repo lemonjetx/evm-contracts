@@ -11,8 +11,4 @@ contract LemonJetOFT is OFT {
         OFT(_name, _symbol, _lzEndpoint, _delegate)
         Ownable(_delegate)
     {}
-
-    function mint(uint256 amount) external {
-        _mint(msg.sender, amount);
-    }
 }
