@@ -65,11 +65,11 @@ contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBase {
         uint256 maxWin = maxWinAmount(coef, gameThreshold);
         require(potentialWinnings <= maxWin, BetAmountAboveLimit(maxWin));
         address player = msg.sender;
-        require(latestGames[player].status != STARTED, AlreadyInGame()); // parallel games are not supported
+        JetGame storage game = latestGames[player];
+        require(game.status != STARTED, AlreadyInGame()); // parallel games are not supported
         IERC20(asset()).safeTransferFrom(player, address(this), bet);
         uint256 requestId = _requestRandomWord();
         requestIdToPlayer[requestId] = player;
-        latestGames[player] = JetGame(uint224(payout), uint24(gameThreshold), STARTED);
 
         // if referrer exists, issue vault shares by 0.3% of bet
         if (referrer != address(0)) {
@@ -81,6 +81,11 @@ contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBase {
         // issue vault shares by 0.2% of bet
         uint256 reserveFundFee = Math.mulDiv(bet, 20, 10_000); // 0.2% of bet
         _mintByAssets(reserveFund, reserveFundFee);
+
+
+        game.payout = uint224(payout);
+        game.threshold = uint24(gameThreshold);
+        game.status = STARTED;
 
         emit GameStarted(requestId, player, bet, coef);
     }
@@ -98,9 +103,10 @@ contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBase {
     function _releaseGame(uint256 requestId, uint256 randomNumber) private {
         // full trust in chainlink that needed data actualy exists
         address player = requestIdToPlayer[requestId];
-        JetGame memory game = latestGames[player];
-        uint256 payout = game.payout;
+
+        JetGame storage game = latestGames[player];
         uint256 gameThreshold = game.threshold;
+        uint256 payout = game.payout;
 
         randomNumber = (randomNumber % 10_000) + 1;
 
