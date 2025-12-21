@@ -5,7 +5,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract LJTFaucet is Ownable {
-
     IERC20 public immutable token;
     uint256 public claimAmount = 1000 * 10 ** 18;
 

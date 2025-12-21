@@ -26,9 +26,7 @@ contract LemonJetTest is Test, HelperContract {
         s_linkToken = new MockLinkToken();
         s_wrapper = new MockVRFV2PlusWrapper(address(s_linkToken), address(1));
         ljtToken = new ERC20Mock();
-        ljtGame = new LemonJet(
-            address(s_wrapper), reserveFund, address(ljtToken), "Vault LemonJet", "VLJT"
-        );
+        ljtGame = new LemonJet(address(s_wrapper), reserveFund, address(ljtToken), "Vault LemonJet", "VLJT");
         ljtToken.mint(address(ljtGame), 500 ether);
         ljtToken.mint(player, 500 ether);
         vm.prank(player);

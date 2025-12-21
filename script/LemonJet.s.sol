@@ -16,8 +16,7 @@ contract LemonJetDeployScript is Script {
 
         ERC20Mock asset = new ERC20Mock();
 
-        LemonJet lemonJet =
-            new LemonJet(vrfWrapper, reserveFund, address(asset), "LemonJet Vault", "LJUSDC");
+        LemonJet lemonJet = new LemonJet(vrfWrapper, reserveFund, address(asset), "LemonJet Vault", "LJUSDC");
         console2.log(address(lemonJet));
         vm.stopBroadcast();
     }

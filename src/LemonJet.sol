@@ -3,8 +3,9 @@ pragma solidity 0.8.28;
 
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {VRFV2PlusWrapperConsumerBase} from
-    "@chainlink-contracts-1.2.0/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
+import {
+    VRFV2PlusWrapperConsumerBase
+} from "@chainlink-contracts-1.2.0/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
 
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {ILemonJet} from "./interfaces/ILemonJet.sol";
@@ -21,7 +22,6 @@ contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBase {
     uint256 private constant threshold = 1e6;
     mapping(address => JetGame) public latestGames;
     mapping(uint256 => address) public requestIdToPlayer;
-
 
     // 1 storage slot
     struct JetGame {
@@ -81,7 +81,6 @@ contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBase {
         // issue vault shares by 0.2% of bet
         uint256 reserveFundFee = Math.mulDiv(bet, 20, 10_000); // 0.2% of bet
         _mintByAssets(reserveFund, reserveFundFee);
-
 
         game.payout = uint224(payout);
         game.threshold = uint24(gameThreshold);
@@ -148,7 +147,6 @@ contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBase {
         // zero block confirmations need to get a random number as fast as possible because and chain reorganization can't negatively affect
         (requestId,) = requestRandomnessPayInNative(50_000, 0, 1, extraArgs);
     }
-
 
     /// @notice sending accumulated native tokens to the `reserveFund`
     /// @dev `reserveFund` is EOA
