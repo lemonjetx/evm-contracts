@@ -97,13 +97,14 @@ contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBase {
     function _releaseGame(uint256 requestId, uint256 randomNumber) private {
         // full trust in chainlink that needed data actualy exists
         address player = requestIdToPlayer[requestId];
-        JetGame storage game = latestGames[player];
+        JetGame memory game = latestGames[player];
         uint256 payout = game.payout;
+        uint256 gameThreshold = game.threshold;
 
         randomNumber = (randomNumber % 10_000) + 1;
 
         // check if a player has won
-        if (randomNumber <= game.threshold) {
+        if (randomNumber <= gameThreshold) {
             /**
              * @dev See {Vault-_payoutWin}.
              */
