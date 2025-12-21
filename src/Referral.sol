@@ -6,7 +6,7 @@ import {IReferral} from "./interfaces/IReferral.sol";
 /// @title Referral contract
 /// @notice set and stores who invited the player
 /// @dev allowing the EOA or contract to set up only once a referrer address for `tx.origin`
-contract Referral is IReferral {
+abstract contract Referral is IReferral {
     // referee => referrer
     mapping(address => address) private referrals;
 

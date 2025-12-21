@@ -3,13 +3,28 @@
     "rev": "ce122b0f7c9c2f5e09a85b6b43c4255a2a5eb448"
   },
   "lib/forge-std": {
-    "rev": "1de6eecf821de7fe2c908cc48d3ab3dced20717f"
+    "tag": {
+      "name": "v1.12.0",
+      "rev": "7117c90c8cf6c68e5acce4f09a6b24715cea4de6"
+    }
   },
   "lib/layerzero-v2": {
     "rev": "7bcfb4d5dac4192570af5e51dbc67413a6116a14"
   },
   "lib/openzeppelin-contracts": {
     "rev": "69c8def5f222ff96f2b5beff05dfba996368aa79"
+  },
+  "lib/openzeppelin-contracts-upgradeable": {
+    "tag": {
+      "name": "v5.5.0",
+      "rev": "aa677e9d28ed78fc427ec47ba2baef2030c58e7c"
+    }
+  },
+  "lib/openzeppelin-foundry-upgrades": {
+    "tag": {
+      "name": "v0.4.0",
+      "rev": "cbce1e00305e943aa1661d43f41e5ac72c662b07"
+    }
   },
   "lib/solmate": {
     "rev": "97bdb2003b70382996a79a406813f76417b1cf90"
