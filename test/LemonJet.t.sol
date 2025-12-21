@@ -4,7 +4,6 @@ pragma solidity ^0.8.28;
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 import {LemonJet} from "../src/LemonJet.sol";
-import {Referral} from "../src/Referral.sol";
 import {HelperContract} from "./HelperContract.sol";
 import {VRFV2PlusClient} from "@chainlink-contracts-1.2.0/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 
@@ -16,7 +15,6 @@ import {ERC20Mock} from "openzeppelin-contracts/contracts/mocks/token/ERC20Mock.
 contract LemonJetTest is Test, HelperContract {
     address constant referralAddress = address(5);
     ERC20Mock ljtToken;
-    Referral referrals;
     ERC20Mock usdcToken;
     LemonJet ljtGame;
 
@@ -28,9 +26,8 @@ contract LemonJetTest is Test, HelperContract {
         s_linkToken = new MockLinkToken();
         s_wrapper = new MockVRFV2PlusWrapper(address(s_linkToken), address(1));
         ljtToken = new ERC20Mock();
-        referrals = new Referral();
         ljtGame = new LemonJet(
-            address(s_wrapper), reserveFund, address(ljtToken), address(referrals), "Vault LemonJet", "VLJT"
+            address(s_wrapper), reserveFund, address(ljtToken), "Vault LemonJet", "VLJT"
         );
         ljtToken.mint(address(ljtGame), 500 ether);
         ljtToken.mint(player, 500 ether);
@@ -62,10 +59,12 @@ contract LemonJetTest is Test, HelperContract {
         assertEq(statusAfterRelease, 2);
     }
 
-    function testFailPlayBeforeRelease() public {
-        vm.prank(player);
-        vm.deal(player, 1 ether);
+    function test_RevertWhen_PlayBeforeRelease() public {
+        vm.startPrank(player);
+        vm.deal(player, 2 ether);
         ljtGame.play{value: 1 ether}(1 ether, 150, referralAddress);
+        vm.expectRevert(abi.encodeWithSignature("AlreadyInGame()"));
         ljtGame.play{value: 1 ether}(1 ether, 150, referralAddress);
+        vm.stopPrank();
     }
 }

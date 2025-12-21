@@ -25,7 +25,7 @@ contract Referral is IReferral {
     }
 
     /// @param referrer_ can only be set once
-    function _setReferrerIfNotExists(address referrer_) private returns (address) {
+    function _setReferrerIfNotExists(address referrer_) internal returns (address) {
         // referrer set for tx.origin
         address referrer = getReferrer(msg.sender);
         if (referrer == address(0) && referrer_ != address(0)) {
