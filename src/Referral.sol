@@ -5,13 +5,13 @@ import {IReferral} from "./interfaces/IReferral.sol";
 
 /// @title Referral contract
 /// @notice set and stores who invited the player
-/// @dev allowing the EOA or contract to set up only once a referrer address for `tx.origin`
-abstract contract Referral is IReferral {
+/// @dev allowing the EOA or contract to set up only once a referrer address for `msg.sender`
+contract Referral is IReferral {
     // referee => referrer
     mapping(address => address) private referrals;
 
-    /// @dev `tx.origin` is used for new contracts so they can add referrals.
-    function setReferrer(address referrer) external {
+    /// @dev `msg.sender` is used for new contracts so they can add referrals.
+    function setReferrer(address referrer) public {
         require(referrer != address(0), ZeroAddressNotAllowed());
         address referee = msg.sender;
         require(referrals[referee] == address(0), ReferrerAlreadySet());
@@ -20,7 +20,19 @@ abstract contract Referral is IReferral {
         emit ReferrerSettled(referee, referrer);
     }
 
-    function getReferrer(address referee) external view returns (address) {
+    function getReferrer(address referee) public view returns (address) {
         return referrals[referee];
+    }
+
+    /// @param referrer_ can only be set once
+    function _setReferrerIfNotExists(address referrer_) private returns (address) {
+        // referrer set for tx.origin
+        address referrer = getReferrer(msg.sender);
+        if (referrer == address(0) && referrer_ != address(0)) {
+            setReferrer(referrer_);
+            return referrer_;
+        } else {
+            return referrer;
+        }
     }
 }

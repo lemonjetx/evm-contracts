@@ -7,9 +7,9 @@ import {VRFV2PlusWrapperConsumerBase} from
     "@chainlink-contracts-1.2.0/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
 import {ILemonJet} from "./interfaces/ILemonJet.sol";
 import {Vault} from "./Vault.sol";
-import {IReferral} from "./interfaces/IReferral.sol";
+import {Referral} from "./Referral.sol";
 
-contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
+contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBase {
     using SafeERC20 for IERC20;
 
     uint8 private constant STARTED = 1;
@@ -20,7 +20,6 @@ contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
     mapping(address => JetGame) public latestGames;
     mapping(uint256 => address) public requestIdToPlayer;
 
-    IReferral public immutable referrals;
 
     // 1 storage slot
     struct JetGame {
@@ -36,15 +35,11 @@ contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
         address _reserveFund,
         // ERC20 token for ERC4626 Vault
         address _asset,
-        // Referral contract
-        address _referral,
         // Vault shares token name
         string memory _name,
         // Vault shares token symbol
         string memory _symbol
-    ) VRFV2PlusWrapperConsumerBase(wrapperAddress) Vault(_asset, _reserveFund, _name, _symbol) {
-        referrals = IReferral(_referral);
-    }
+    ) VRFV2PlusWrapperConsumerBase(wrapperAddress) Vault(_asset, _reserveFund, _name, _symbol) {}
 
     function play(uint256 bet, uint16 coef, address referrer) external payable {
         referrer = _setReferrerIfNotExists(referrer);
@@ -52,8 +47,8 @@ contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
     }
 
     function play(uint256 bet, uint16 coef) external payable {
-        address referral = referrals.getReferrer(tx.origin);
-        _play(bet, coef, referral);
+        address referrer = getReferrer(msg.sender);
+        _play(bet, coef, referrer);
     }
 
     /// @param bet is amount of tokens to play
@@ -67,25 +62,26 @@ contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
         uint256 gameThreshold = calcThresholdForCoef(coef);
         uint256 maxWin = maxWinAmount(coef, gameThreshold);
         require(potentialWinnings <= maxWin, BetAmountAboveLimit(maxWin));
-        require(latestGames[msg.sender].status != STARTED, AlreadyInGame()); // parallel games are not supported
-        IERC20(asset()).safeTransferFrom(msg.sender, address(this), bet);
+        address player = msg.sender;
+        require(latestGames[player].status != STARTED, AlreadyInGame()); // parallel games are not supported
+        IERC20(asset()).safeTransferFrom(player, address(this), bet);
         uint256 requestId = _requestRandomWord();
-        requestIdToPlayer[requestId] = msg.sender;
-        latestGames[msg.sender] = JetGame(uint224(payout), uint24(gameThreshold), STARTED);
+        requestIdToPlayer[requestId] = player;
+        latestGames[player] = JetGame(uint224(payout), uint24(gameThreshold), STARTED);
 
         uint256 fee = bet / 100; // 1% fee
         // if referrer exists, issue vault shares by 0.3% of bet
         if (referrer != address(0)) {
             uint256 referrerReward = (fee * 30) / 100; // 30% of fee
             _mintByAssets(referrer, referrerReward);
-            emit ReferrerRewardIssued(referrer, msg.sender, referrerReward);
+            emit ReferrerRewardIssued(referrer, player, referrerReward);
         }
 
         // issue vault shares by 0.2% of bet
         uint256 reserveFundFee = (fee * 20) / 100; // 20% of fee
         _mintByAssets(reserveFund, reserveFundFee);
 
-        emit GameStarted(requestId, msg.sender, bet, coef);
+        emit GameStarted(requestId, player, bet, coef);
     }
 
     function calcThresholdForCoef(uint256 coef) private pure returns (uint256) {
@@ -145,17 +141,6 @@ contract LemonJet is ILemonJet, Vault, VRFV2PlusWrapperConsumerBase {
         (requestId,) = requestRandomnessPayInNative(50_000, 0, 1, extraArgs);
     }
 
-    /// @param referrer_ can only be set once
-    function _setReferrerIfNotExists(address referrer_) private returns (address) {
-        // referrer set for tx.origin
-        address referrer = referrals.getReferrer(tx.origin);
-        if (referrer == address(0) && referrer_ != address(0)) {
-            referrals.setReferrer(referrer_);
-            return referrer_;
-        } else {
-            return referrer;
-        }
-    }
 
     /// @notice sending accumulated native tokens to the `reserveFund`
     /// @dev `reserveFund` is EOA
