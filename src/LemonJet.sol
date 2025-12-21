@@ -5,6 +5,8 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {VRFV2PlusWrapperConsumerBase} from
     "@chainlink-contracts-1.2.0/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
+
+import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {ILemonJet} from "./interfaces/ILemonJet.sol";
 import {Vault} from "./Vault.sol";
 import {Referral} from "./Referral.sol";
@@ -69,16 +71,15 @@ contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBase {
         requestIdToPlayer[requestId] = player;
         latestGames[player] = JetGame(uint224(payout), uint24(gameThreshold), STARTED);
 
-        uint256 fee = bet / 100; // 1% fee
         // if referrer exists, issue vault shares by 0.3% of bet
         if (referrer != address(0)) {
-            uint256 referrerReward = (fee * 30) / 100; // 30% of fee
+            uint256 referrerReward = Math.mulDiv(bet, 30, 10_000); // 0.3% of bet
             _mintByAssets(referrer, referrerReward);
             emit ReferrerRewardIssued(referrer, player, referrerReward);
         }
 
         // issue vault shares by 0.2% of bet
-        uint256 reserveFundFee = (fee * 20) / 100; // 20% of fee
+        uint256 reserveFundFee = Math.mulDiv(bet, 20, 10_000); // 0.2% of bet
         _mintByAssets(reserveFund, reserveFundFee);
 
         emit GameStarted(requestId, player, bet, coef);
