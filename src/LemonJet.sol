@@ -41,12 +41,12 @@ contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBase {
         string memory _symbol
     ) VRFV2PlusWrapperConsumerBase(wrapperAddress) Vault(_asset, _reserveFund, _name, _symbol) {}
 
-    function play(uint256 bet, uint16 coef, address referrer) external payable {
+    function play(uint256 bet, uint32 coef, address referrer) external payable {
         referrer = _setReferrerIfNotExists(referrer);
         _play(bet, coef, referrer);
     }
 
-    function play(uint256 bet, uint16 coef) external payable {
+    function play(uint256 bet, uint32 coef) external payable {
         address referrer = getReferrer(msg.sender);
         _play(bet, coef, referrer);
     }
@@ -54,7 +54,7 @@ contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBase {
     /// @param bet is amount of tokens to play
     /// @param coef is multiplier of bet
     /// @param referrer is address of referrer (optional)
-    function _play(uint256 bet, uint16 coef, address referrer) private {
+    function _play(uint256 bet, uint32 coef, address referrer) private {
         require(bet >= 1000, BetAmountBelowLimit(1000)); // required precision to get 0.1% of bet
         require(coef >= 1_01 && coef <= 5000_00, InvalidMultiplier()); // 1.01 <= coef <= 5000.00
         uint256 payout = (bet * coef) / 100;
