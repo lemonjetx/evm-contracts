@@ -13,10 +13,11 @@ contract Referral is IReferral {
     /// @dev `tx.origin` is used for new contracts so they can add referrals.
     function setReferrer(address referrer) external {
         require(referrer != address(0), ZeroAddressNotAllowed());
-        require(referrals[tx.origin] == address(0), ReferrerAlreadySet());
-        require(referrer != tx.origin, ReferrerEqualsReferee());
-        referrals[tx.origin] = referrer;
-        emit ReferrerSettled(tx.origin, referrer);
+        address referee = msg.sender;
+        require(referrals[referee] == address(0), ReferrerAlreadySet());
+        require(referrer != referee, ReferrerEqualsReferee());
+        referrals[referee] = referrer;
+        emit ReferrerSettled(referee, referrer);
     }
 
     function getReferrer(address referee) external view returns (address) {
