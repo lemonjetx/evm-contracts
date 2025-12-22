@@ -20,8 +20,7 @@ contract LemonJetDeployScript is Script {
         address proxy = Upgrades.deployUUPSProxy(
             "LemonJet.sol",
             abi.encodeCall(
-                LemonJet.initialize,
-                (vrfWrapper, reserveFund, IERC20(vaultToken), "LemonJet Vault", "LJUSDC")
+                LemonJet.initialize, (vrfWrapper, reserveFund, IERC20(vaultToken), "LemonJet Vault", "LJUSDC")
             )
         );
 

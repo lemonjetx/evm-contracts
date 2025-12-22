@@ -23,10 +23,7 @@ contract VaultTest is Test, HelperContract {
         // Deploy UUPS proxy using UnsafeUpgrades (recommended for coverage tests)
         address proxy = UnsafeUpgrades.deployUUPSProxy(
             implementation,
-            abi.encodeCall(
-                VaultHarness.initialize,
-                (IERC20(address(asset)), reserveFund, "LemonJet Vault", "VLJT")
-            )
+            abi.encodeCall(VaultHarness.initialize, (IERC20(address(asset)), reserveFund, "LemonJet Vault", "VLJT"))
         );
 
         vault = Vault(proxy);

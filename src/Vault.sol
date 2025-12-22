@@ -13,17 +13,15 @@ contract Vault is IVault, ERC4626FeesUpgradeable {
 
     using SafeERC20 for IERC20;
 
-    function initialize(
-        IERC20 _asset,
-        address _reserveFund,
-        string memory _name,
-        string memory _symbol
-    ) public virtual onlyInitializing {
+    function initialize(IERC20 _asset, address _reserveFund, string memory _name, string memory _symbol)
+        public
+        virtual
+        onlyInitializing
+    {
         __ERC4626_init(_asset);
         __ERC20_init(_name, _symbol);
         reserveFund = _reserveFund;
     }
-
 
     /**
      * @dev See {IERC4626-withdraw}.

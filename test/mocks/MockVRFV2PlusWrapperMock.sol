@@ -68,11 +68,19 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
 
     // Mock implementation of requestRandomWordsInNative
     function requestRandomWordsInNative(
-        uint32 /*_callbackGasLimit*/,
-        uint16 /*_requestConfirmations*/,
-        uint32 /*_numWords*/,
+        uint32,
+        /*_callbackGasLimit*/
+        uint16,
+        /*_requestConfirmations*/
+        uint32,
+        /*_numWords*/
         bytes calldata /*extraArgs*/
-    ) external payable override returns (uint256) {
+    )
+        external
+        payable
+        override
+        returns (uint256)
+    {
         // Increment the requestId to simulate a new request
         _lastRequestId++;
         // Simulate processing and return the request ID

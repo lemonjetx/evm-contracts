@@ -3,9 +3,7 @@ pragma solidity 0.8.28;
 
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {
-    VRFV2PlusWrapperConsumerBaseUpgradeable
-} from "./VRFV2PlusWrapperConsumerBase.sol";
+import {VRFV2PlusWrapperConsumerBaseUpgradeable} from "./VRFV2PlusWrapperConsumerBase.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {ILemonJet} from "./interfaces/ILemonJet.sol";
 import {Vault} from "./Vault.sol";
@@ -13,7 +11,14 @@ import {Referral} from "./Referral.sol";
 import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBaseUpgradeable, OwnableUpgradeable, UUPSUpgradeable {
+contract LemonJet is
+    ILemonJet,
+    Referral,
+    Vault,
+    VRFV2PlusWrapperConsumerBaseUpgradeable,
+    OwnableUpgradeable,
+    UUPSUpgradeable
+{
     using SafeERC20 for IERC20;
 
     uint8 private constant STARTED = 1;
@@ -163,7 +168,6 @@ contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBaseUpg
     function claimNativeBalance() external {
         payable(reserveFund).transfer(address(this).balance);
     }
-
 
     /// @dev Required by UUPSUpgradeable - only owner can upgrade
     function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner {}
