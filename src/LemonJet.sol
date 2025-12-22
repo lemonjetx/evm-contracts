@@ -4,15 +4,16 @@ pragma solidity 0.8.28;
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {
-    VRFV2PlusWrapperConsumerBase
-} from "@chainlink-contracts-1.2.0/src/v0.8/vrf/dev/VRFV2PlusWrapperConsumerBase.sol";
-
+    VRFV2PlusWrapperConsumerBaseUpgradeable
+} from "./VRFV2PlusWrapperConsumerBase.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {ILemonJet} from "./interfaces/ILemonJet.sol";
 import {Vault} from "./Vault.sol";
 import {Referral} from "./Referral.sol";
+import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBase {
+contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBaseUpgradeable, OwnableUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     uint8 private constant STARTED = 1;
@@ -30,18 +31,27 @@ contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBase {
         uint8 status; // 0, 1, 2
     }
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         //  VRF Wrapper 2.5 for Direct Funding
         address wrapperAddress,
         // EOA which receives a fee
         address _reserveFund,
         // ERC20 token for ERC4626 Vault
-        address _asset,
+        IERC20 _asset,
         // Vault shares token name
         string memory _name,
         // Vault shares token symbol
         string memory _symbol
-    ) VRFV2PlusWrapperConsumerBase(wrapperAddress) Vault(_asset, _reserveFund, _name, _symbol) {}
+    ) public initializer {
+        VRFV2PlusWrapperConsumerBaseUpgradeable.initialize(wrapperAddress);
+        Vault.initialize(_asset, _reserveFund, _name, _symbol);
+        __Ownable_init(msg.sender);
+    }
 
     function play(uint256 bet, uint32 coef, address referrer) external payable {
         referrer = _setReferrerIfNotExists(referrer);
@@ -153,4 +163,8 @@ contract LemonJet is ILemonJet, Referral, Vault, VRFV2PlusWrapperConsumerBase {
     function claimNativeBalance() external {
         payable(reserveFund).transfer(address(this).balance);
     }
+
+
+    /// @dev Required by UUPSUpgradeable - only owner can upgrade
+    function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner {}
 }

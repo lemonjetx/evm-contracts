@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "forge-std/Test.sol";
-import "forge-std/console2.sol";
+import {Test} from "forge-std/Test.sol";
+import {console2} from "forge-std/console2.sol";
 import {ERC20Mock} from "openzeppelin-contracts/contracts/mocks/token/ERC20Mock.sol";
 import {Vault} from "../src/Vault.sol";
+import {VaultHarness} from "./mocks/VaultHarness.sol";
 import {HelperContract} from "./HelperContract.sol";
-import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import {UnsafeUpgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 contract VaultTest is Test, HelperContract {
     ERC20Mock asset;
@@ -14,7 +16,21 @@ contract VaultTest is Test, HelperContract {
 
     function setUp() public {
         asset = new ERC20Mock();
-        vault = new Vault(address(asset), reserveFund, "LemonJet Vault", "VLJT");
+
+        // Deploy VaultHarness implementation (which has initializer entry point)
+        address implementation = address(new VaultHarness());
+
+        // Deploy UUPS proxy using UnsafeUpgrades (recommended for coverage tests)
+        address proxy = UnsafeUpgrades.deployUUPSProxy(
+            implementation,
+            abi.encodeCall(
+                VaultHarness.initialize,
+                (IERC20(address(asset)), reserveFund, "LemonJet Vault", "VLJT")
+            )
+        );
+
+        vault = Vault(proxy);
+
         asset.mint(player, 10 ether);
         vm.startPrank(player);
         asset.approve(address(vault), type(uint256).max);

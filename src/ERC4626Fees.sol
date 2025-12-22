@@ -4,10 +4,11 @@ pragma solidity 0.8.28;
 
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ERC4626} from "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
+import {ERC4626Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @dev ERC4626 vault with exit fees expressed in https://en.wikipedia.org/wiki/Basis_point[basis point (bp)].
-abstract contract ERC4626Fees is ERC4626 {
+abstract contract ERC4626FeesUpgradeable is ERC4626Upgradeable {
     uint256 internal constant _BASIS_POINT_SCALE = 1e4;
     uint256 internal constant _exitFeeBasisPoints = 60; // 0.6%
 

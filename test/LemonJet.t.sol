@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "forge-std/Test.sol";
-import "forge-std/console2.sol";
+import {Test} from "forge-std/Test.sol";
 import {LemonJet} from "../src/LemonJet.sol";
 import {HelperContract} from "./HelperContract.sol";
-import {VRFV2PlusClient} from "@chainlink-contracts-1.2.0/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+import {UnsafeUpgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 import {MockLinkToken} from "@chainlink-contracts-1.2.0/src/v0.8/mocks/MockLinkToken.sol";
 
 import {MockVRFV2PlusWrapper} from "./mocks/MockVRFV2PlusWrapperMock.sol";
 import {ERC20Mock} from "openzeppelin-contracts/contracts/mocks/token/ERC20Mock.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 contract LemonJetTest is Test, HelperContract {
     address constant referralAddress = address(5);
@@ -26,7 +26,21 @@ contract LemonJetTest is Test, HelperContract {
         s_linkToken = new MockLinkToken();
         s_wrapper = new MockVRFV2PlusWrapper(address(s_linkToken), address(1));
         ljtToken = new ERC20Mock();
-        ljtGame = new LemonJet(address(s_wrapper), reserveFund, address(ljtToken), "Vault LemonJet", "VLJT");
+
+        // Deploy implementation directly for coverage testing
+        address implementation = address(new LemonJet());
+
+        // Deploy UUPS proxy using UnsafeUpgrades (recommended for coverage tests)
+        address proxy = UnsafeUpgrades.deployUUPSProxy(
+            implementation,
+            abi.encodeCall(
+                LemonJet.initialize,
+                (address(s_wrapper), reserveFund, IERC20(address(ljtToken)), "Vault LemonJet", "VLJT")
+            )
+        );
+
+        ljtGame = LemonJet(proxy);
+
         ljtToken.mint(address(ljtGame), 500 ether);
         ljtToken.mint(player, 500 ether);
         vm.prank(player);
@@ -41,7 +55,7 @@ contract LemonJetTest is Test, HelperContract {
 
         address _player = ljtGame.requestIdToPlayer(requestId);
 
-        (uint256 potentialWinnings, uint256 threshold, uint8 statusBeforeRelease) = ljtGame.latestGames(player);
+        (uint256 potentialWinnings,, uint8 statusBeforeRelease) = ljtGame.latestGames(player);
         assertEq(potentialWinnings, (1 ether * 150) / 100);
         assertEq(statusBeforeRelease, 1);
         assertEq(_player, player);
