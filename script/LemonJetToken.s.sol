@@ -13,7 +13,7 @@ contract DeployLemonJetToken is Script {
 
         address recipient = vm.envOr("TOKEN_RECIPIENT", deployer);
         address initialOwner = vm.envOr("TOKEN_OWNER", deployer);
-        uint256 mintAmount = vm.envOr("TOKEN_MINT_AMOUNT", uint256(0));
+        uint256 mintAmount = vm.envOr("TOKEN_MINT_AMOUNT", uint256(1000 ether));
 
         vm.startBroadcast(deployerPrivateKey);
 
