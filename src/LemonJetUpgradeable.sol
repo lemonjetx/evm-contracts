@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {
-    VRFV2PlusWrapperConsumerBaseUpgradeable
-} from "./VRFV2PlusWrapperConsumerBaseUpgradeable.sol";
-import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {VRFV2PlusWrapperConsumerBaseUpgradeable} from "./VRFV2PlusWrapperConsumerBaseUpgradeable.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {ILemonJet} from "./interfaces/ILemonJet.sol";
 import {VaultUpgradeable} from "./VaultUpgradeable.sol";
 import {Referral} from "./Referral.sol";
@@ -15,6 +14,7 @@ import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/prox
 
 contract LemonJetUpgradeable is
     ILemonJet,
+    ReentrancyGuardTransient,
     Referral,
     VaultUpgradeable,
     VRFV2PlusWrapperConsumerBaseUpgradeable,
@@ -66,12 +66,12 @@ contract LemonJetUpgradeable is
         __Ownable_init(msg.sender);
     }
 
-    function play(uint256 bet, uint32 coef, address referrer) external payable {
+    function play(uint256 bet, uint32 coef, address referrer) external payable nonReentrant {
         referrer = _setReferrerIfNotExists(referrer);
         _play(bet, coef, referrer);
     }
 
-    function play(uint256 bet, uint32 coef) external payable {
+    function play(uint256 bet, uint32 coef) external payable nonReentrant {
         address referrer = getReferrer(msg.sender);
         _play(bet, coef, referrer);
     }
@@ -85,7 +85,7 @@ contract LemonJetUpgradeable is
         uint256 payout = (bet * coef) / 100;
         uint256 potentialWinnings = payout - bet;
         uint256 gameThreshold = calcThresholdForCoef(coef);
-        uint256 maxWin = maxWinAmount(coef, gameThreshold);
+        uint256 maxWin = maxWinAmount();
         require(potentialWinnings <= maxWin, BetAmountAboveLimit(maxWin));
         address player = msg.sender;
         JetGame storage game = latestGames[player];
@@ -170,7 +170,8 @@ contract LemonJetUpgradeable is
 
         require(msg.value >= requestPrice, FeeTooLow(requestPrice));
 
-        requestId = requestRandomnessPayInNative(CALLBACK_GAS_LIMIT, REQUEST_CONFIRMATIONS, NUM_WORDS, extraArgs, requestPrice);
+        requestId =
+            requestRandomnessPayInNative(CALLBACK_GAS_LIMIT, REQUEST_CONFIRMATIONS, NUM_WORDS, extraArgs, requestPrice);
     }
 
     /// @notice sending accumulated native tokens to the `reserveFund`

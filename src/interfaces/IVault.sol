@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 interface IVault is IERC4626 {
-    function maxWinAmount(uint256 coef, uint256 threshold) external view returns (uint256);
+    function maxWinAmount() external view returns (uint256);
 }

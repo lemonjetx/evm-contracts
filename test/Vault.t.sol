@@ -3,12 +3,12 @@ pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 import {console2} from "forge-std/console2.sol";
-import {ERC20Mock} from "openzeppelin-contracts/contracts/mocks/token/ERC20Mock.sol";
+import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {VaultUpgradeable} from "../src/VaultUpgradeable.sol";
 import {VaultHarness} from "./mocks/VaultHarness.sol";
 import {HelperContract} from "./HelperContract.sol";
 import {UnsafeUpgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract VaultTest is Test, HelperContract {
     ERC20Mock asset;
@@ -100,16 +100,5 @@ contract VaultTest is Test, HelperContract {
         uint256 expectedReserveFee = (sharesWithoutExitFee * 10) / 1e4;
 
         assertEq(vault.balanceOf(reserveFund), expectedReserveFee);
-    }
-
-    function testMaxWinAmountUsesKellyCriteria() public {
-        vault.deposit(10 ether, player);
-
-        uint256 coef = 150;
-        uint256 threshold = 6600;
-        uint256 kelly = ((100 * (10_000 - threshold)) / (coef - 100)) - threshold;
-        uint256 expectedMaxWin = (vault.totalAssets() * kelly) / 1e4;
-
-        assertEq(vault.maxWinAmount(coef, threshold), expectedMaxWin);
     }
 }

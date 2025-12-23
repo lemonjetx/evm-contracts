@@ -17,8 +17,7 @@ contract LemonJetTokenTest is Test {
     function setUp() public {
         address implementation = address(new LemonJetTokenUpgradeable());
         address proxy = UnsafeUpgrades.deployUUPSProxy(
-            implementation,
-            abi.encodeCall(LemonJetTokenUpgradeable.initialize, (recipient, owner, mintAmount))
+            implementation, abi.encodeCall(LemonJetTokenUpgradeable.initialize, (recipient, owner, mintAmount))
         );
         token = LemonJetTokenUpgradeable(proxy);
     }
@@ -41,9 +40,7 @@ contract LemonJetTokenTest is Test {
         assertEq(token.balanceOf(recipient), initialBalance + 10 ether);
 
         vm.prank(nonOwner);
-        vm.expectRevert(
-            abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nonOwner)
-        );
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, nonOwner));
         token.mint(recipient, 1 ether);
     }
 }

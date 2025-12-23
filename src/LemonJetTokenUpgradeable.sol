@@ -3,13 +3,20 @@
 pragma solidity ^0.8.28;
 
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {
+    ERC20PermitUpgradeable
+} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-contract LemonJetTokenUpgradeable is Initializable, ERC20Upgradeable, OwnableUpgradeable, ERC20PermitUpgradeable, UUPSUpgradeable {
-
+contract LemonJetTokenUpgradeable is
+    Initializable,
+    ERC20Upgradeable,
+    OwnableUpgradeable,
+    ERC20PermitUpgradeable,
+    UUPSUpgradeable
+{
     error AlreadyMinted();
 
     uint256 public mintAmount;
@@ -20,10 +27,7 @@ contract LemonJetTokenUpgradeable is Initializable, ERC20Upgradeable, OwnableUpg
         _disableInitializers();
     }
 
-    function initialize(address recipient, address initialOwner, uint256 _mintAmount)
-        public
-        initializer
-    {
+    function initialize(address recipient, address initialOwner, uint256 _mintAmount) public initializer {
         __ERC20_init("LemonJetToken", "LJT");
         __Ownable_init(initialOwner);
         __ERC20Permit_init("LemonJetToken");
@@ -49,9 +53,5 @@ contract LemonJetTokenUpgradeable is Initializable, ERC20Upgradeable, OwnableUpg
         mintAmount = _mintAmount;
     }
 
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        override
-        onlyOwner
-    {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

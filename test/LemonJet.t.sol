@@ -11,8 +11,8 @@ import {VRFV2PlusWrapperConsumerBaseUpgradeable} from "../src/VRFV2PlusWrapperCo
 import {MockLinkToken} from "@chainlink-contracts-1.2.0/src/v0.8/mocks/MockLinkToken.sol";
 
 import {MockVRFV2PlusWrapper} from "./mocks/MockVRFV2PlusWrapperMock.sol";
-import {ERC20Mock} from "openzeppelin-contracts/contracts/mocks/token/ERC20Mock.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract LemonJetTest is Test, HelperContract {
     address constant referralAddress = address(5);
@@ -160,7 +160,7 @@ contract LemonJetTest is Test, HelperContract {
         uint256 bet = 1 ether;
         uint32 coef = 150;
         uint256 gameThreshold = (1_000_000 / uint256(coef)) * 99 / 100;
-        uint256 maxWin = ljtGame.maxWinAmount(coef, gameThreshold);
+        uint256 maxWin = ljtGame.maxWinAmount();
 
         vm.prank(player);
         vm.expectRevert(abi.encodeWithSelector(ILemonJet.BetAmountAboveLimit.selector, maxWin));

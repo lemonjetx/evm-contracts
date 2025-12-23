@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {VaultUpgradeable} from "../../src/VaultUpgradeable.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @dev Test harness for VaultUpgradeable that provides an initializer entry point
 contract VaultHarness is VaultUpgradeable {

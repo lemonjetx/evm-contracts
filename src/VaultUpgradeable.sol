@@ -3,9 +3,9 @@ pragma solidity 0.8.28;
 
 import {IVault} from "./interfaces/IVault.sol";
 import {ERC4626FeesUpgradeable} from "./ERC4626Fees.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 contract VaultUpgradeable is IVault, ERC4626FeesUpgradeable {
     uint256 private constant _reserveFundFeeBasisPoints = 10; // 0.1%
@@ -53,12 +53,8 @@ contract VaultUpgradeable is IVault, ERC4626FeesUpgradeable {
 
     /// @dev returns the maximum amount of underlying assets that can be payout as win in a single game.
 
-    function maxWinAmount(uint256 coef, uint256 threshold) public view returns (uint256) {
-        return (totalAssets() * _kellyCriteria(coef - 100, threshold)) / _BASIS_POINT_SCALE;
-    }
-
-    function _kellyCriteria(uint256 b, uint256 p) private pure returns (uint256) {
-        return ((100 * (10_000 - p)) / b) - p;
+    function maxWinAmount() public view returns (uint256) {
+        return (totalAssets() * _exitFeeBasisPoints) / _BASIS_POINT_SCALE;
     }
 
     function _mintByAssets(address receiver, uint256 assets) internal {
