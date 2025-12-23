@@ -5,7 +5,11 @@ libs = ["lib"]
 optimizer = true
 optimizer_runs = 20_000
 solc_version = "0.8.28"
-gas_reports = ["LemonJet"]
+gas_reports = ["LemonJetUpgradeable"]
+ffi = true
+ast = true
+build_info = true
+extra_output = ["storageLayout"]
 
 [rpc_endpoints]
 sepolia = "${SEPOLIA_RPC_URL}"

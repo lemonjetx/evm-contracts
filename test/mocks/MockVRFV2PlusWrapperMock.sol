@@ -10,9 +10,9 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
     address private _linkNativeFeedAddress;
     uint256 private _mockPrice;
 
-    constructor(address linkToken, address linkNativeFeed) {
+    constructor(address linkToken, address linkNativeFeedAddress) {
         _linkTokenAddress = linkToken;
-        _linkNativeFeedAddress = linkNativeFeed;
+        _linkNativeFeedAddress = linkNativeFeedAddress;
         _lastRequestId = 0;
         _mockPrice = 1000 gwei; // Default price for simplicity in testing
     }
@@ -47,7 +47,7 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
     // Mock implementation of estimateRequestPrice
     function estimateRequestPrice(uint32 _callbackGasLimit, uint32 _numWords, uint256 _requestGasPriceWei)
         external
-        view
+        pure
         override
         returns (uint256)
     {
@@ -58,7 +58,7 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
     // Mock implementation of estimateRequestPriceNative
     function estimateRequestPriceNative(uint32 _callbackGasLimit, uint32 _numWords, uint256 _requestGasPriceWei)
         external
-        view
+        pure
         override
         returns (uint256)
     {
@@ -68,11 +68,19 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
 
     // Mock implementation of requestRandomWordsInNative
     function requestRandomWordsInNative(
-        uint32 _callbackGasLimit,
-        uint16 _requestConfirmations,
-        uint32 _numWords,
-        bytes calldata extraArgs
-    ) external payable override returns (uint256) {
+        uint32,
+        /*_callbackGasLimit*/
+        uint16,
+        /*_requestConfirmations*/
+        uint32,
+        /*_numWords*/
+        bytes calldata /*extraArgs*/
+    )
+        external
+        payable
+        override
+        returns (uint256)
+    {
         // Increment the requestId to simulate a new request
         _lastRequestId++;
         // Simulate processing and return the request ID
