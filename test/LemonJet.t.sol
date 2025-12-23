@@ -6,7 +6,7 @@ import {LemonJetUpgradeable} from "../src/LemonJetUpgradeable.sol";
 import {HelperContract} from "./HelperContract.sol";
 import {UnsafeUpgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {ILemonJet} from "../src/interfaces/ILemonJet.sol";
-import {VRFV2PlusWrapperConsumerBaseUpgradeable} from "../src/VRFV2PlusWrapperConsumerBase.sol";
+import {VRFV2PlusWrapperConsumerBaseUpgradeable} from "../src/VRFV2PlusWrapperConsumerBaseUpgradeable.sol";
 
 import {MockLinkToken} from "@chainlink-contracts-1.2.0/src/v0.8/mocks/MockLinkToken.sol";
 

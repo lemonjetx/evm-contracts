@@ -17,4 +17,5 @@ interface ILemonJet {
     error InvalidReferrer();
     error NotTreasury();
     error WithdrawFailed();
+    error FeeTooLow(uint256 requestPrice);
 }

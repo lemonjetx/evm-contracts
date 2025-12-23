@@ -3,7 +3,9 @@ pragma solidity 0.8.28;
 
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {VRFV2PlusWrapperConsumerBaseUpgradeable} from "./VRFV2PlusWrapperConsumerBase.sol";
+import {
+    VRFV2PlusWrapperConsumerBaseUpgradeable
+} from "./VRFV2PlusWrapperConsumerBaseUpgradeable.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {ILemonJet} from "./interfaces/ILemonJet.sol";
 import {VaultUpgradeable} from "./VaultUpgradeable.sol";
@@ -23,6 +25,12 @@ contract LemonJetUpgradeable is
 
     uint8 private constant STARTED = 1;
     uint8 private constant RELEASED = 2;
+
+    // foundry gas report estimate the `rawFulfillRandomWords` at 47738
+    uint32 private constant CALLBACK_GAS_LIMIT = 50_000;
+    // zero block confirmations need to get a random number as fast as possible because and chain reorganization can't negatively affect
+    uint16 private constant REQUEST_CONFIRMATIONS = 0;
+    uint32 private constant NUM_WORDS = 1;
 
     uint256 private constant houseEdge = 1; // %
     uint256 private constant threshold = 1e6;
@@ -158,9 +166,11 @@ contract LemonJetUpgradeable is
             mstore(0x40, add(extraArgs, 0x60)) // update free pointer
         }
 
-        // foundry gas report estimate the `rawFulfillRandomWords` at 47738
-        // zero block confirmations need to get a random number as fast as possible because and chain reorganization can't negatively affect
-        (requestId,) = requestRandomnessPayInNative(50_000, 0, 1, extraArgs);
+        uint256 requestPrice = i_vrfV2PlusWrapper.calculateRequestPriceNative(CALLBACK_GAS_LIMIT, NUM_WORDS);
+
+        require(msg.value >= requestPrice, FeeTooLow(requestPrice));
+
+        requestId = requestRandomnessPayInNative(CALLBACK_GAS_LIMIT, REQUEST_CONFIRMATIONS, NUM_WORDS, extraArgs, requestPrice);
     }
 
     /// @notice sending accumulated native tokens to the `reserveFund`

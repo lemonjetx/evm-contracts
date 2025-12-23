@@ -22,14 +22,13 @@ abstract contract VRFV2PlusWrapperConsumerBaseUpgradeable is Initializable {
         uint32 _callbackGasLimit,
         uint16 _requestConfirmations,
         uint32 _numWords,
+        uint256 requestPrice,
         bytes memory extraArgs
-    ) internal returns (uint256 requestId, uint256 requestPrice) {
-        requestPrice = i_vrfV2PlusWrapper.calculateRequestPriceNative(_callbackGasLimit, _numWords);
+    ) internal returns (uint256 requestId) {
         return (
             i_vrfV2PlusWrapper.requestRandomWordsInNative{value: requestPrice}(
                 _callbackGasLimit, _requestConfirmations, _numWords, extraArgs
             ),
-            requestPrice
         );
     }
 
