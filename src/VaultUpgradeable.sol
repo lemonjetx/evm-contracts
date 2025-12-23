@@ -7,7 +7,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
-contract Vault is IVault, ERC4626FeesUpgradeable {
+contract VaultUpgradeable is IVault, ERC4626FeesUpgradeable {
     uint256 private constant _reserveFundFeeBasisPoints = 10; // 0.1%
     address public reserveFund;
 

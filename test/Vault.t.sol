@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {Test} from "forge-std/Test.sol";
 import {console2} from "forge-std/console2.sol";
 import {ERC20Mock} from "openzeppelin-contracts/contracts/mocks/token/ERC20Mock.sol";
-import {Vault} from "../src/Vault.sol";
+import {VaultUpgradeable} from "../src/VaultUpgradeable.sol";
 import {VaultHarness} from "./mocks/VaultHarness.sol";
 import {HelperContract} from "./HelperContract.sol";
 import {UnsafeUpgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
@@ -12,7 +12,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 contract VaultTest is Test, HelperContract {
     ERC20Mock asset;
-    Vault vault;
+    VaultUpgradeable vault;
 
     function setUp() public {
         asset = new ERC20Mock();
@@ -26,7 +26,7 @@ contract VaultTest is Test, HelperContract {
             abi.encodeCall(VaultHarness.initialize, (IERC20(address(asset)), reserveFund, "LemonJet Vault", "VLJT"))
         );
 
-        vault = Vault(proxy);
+        vault = VaultUpgradeable(proxy);
 
         asset.mint(player, 10 ether);
         vm.startPrank(player);

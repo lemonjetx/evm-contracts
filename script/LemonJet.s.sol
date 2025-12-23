@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {Script} from "forge-std/Script.sol";
 import {console2} from "forge-std/console2.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
-import {LemonJet} from "../src/LemonJet.sol";
+import {LemonJetUpgradeable} from "../src/LemonJetUpgradeable.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 contract LemonJetDeployScript is Script {
@@ -16,15 +16,16 @@ contract LemonJetDeployScript is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        // Deploy a UUPS proxy with the LemonJet implementation
+        // Deploy a UUPS proxy with the LemonJetUpgradeable implementation
         address proxy = Upgrades.deployUUPSProxy(
-            "LemonJet.sol",
+            "LemonJetUpgradeable.sol:LemonJetUpgradeable",
             abi.encodeCall(
-                LemonJet.initialize, (vrfWrapper, reserveFund, IERC20(vaultToken), "LemonJet Vault", "LJUSDC")
+                LemonJetUpgradeable.initialize,
+                (vrfWrapper, reserveFund, IERC20(vaultToken), "LemonJet Vault", "LJUSDC")
             )
         );
 
-        console2.log("LemonJet UUPS proxy deployed at:", proxy);
+        console2.log("LemonJetUpgradeable UUPS proxy deployed at:", proxy);
 
         vm.stopBroadcast();
     }

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {LemonJet} from "../src/LemonJet.sol";
+import {LemonJetUpgradeable} from "../src/LemonJetUpgradeable.sol";
 import {HelperContract} from "./HelperContract.sol";
 import {UnsafeUpgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {ILemonJet} from "../src/interfaces/ILemonJet.sol";
@@ -19,7 +19,7 @@ contract LemonJetTest is Test, HelperContract {
     address constant newReferralAddress = address(6);
     ERC20Mock ljtToken;
     ERC20Mock usdcToken;
-    LemonJet ljtGame;
+    LemonJetUpgradeable ljtGame;
 
     MockLinkToken private s_linkToken;
 
@@ -31,18 +31,18 @@ contract LemonJetTest is Test, HelperContract {
         ljtToken = new ERC20Mock();
 
         // Deploy implementation directly for coverage testing
-        address implementation = address(new LemonJet());
+        address implementation = address(new LemonJetUpgradeable());
 
         // Deploy UUPS proxy using UnsafeUpgrades (recommended for coverage tests)
         address proxy = UnsafeUpgrades.deployUUPSProxy(
             implementation,
             abi.encodeCall(
-                LemonJet.initialize,
+                LemonJetUpgradeable.initialize,
                 (address(s_wrapper), reserveFund, IERC20(address(ljtToken)), "Vault LemonJet", "VLJT")
             )
         );
 
-        ljtGame = LemonJet(proxy);
+        ljtGame = LemonJetUpgradeable(proxy);
 
         ljtToken.mint(address(ljtGame), 500 ether);
         ljtToken.mint(player, 500 ether);

@@ -6,15 +6,15 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {VRFV2PlusWrapperConsumerBaseUpgradeable} from "./VRFV2PlusWrapperConsumerBase.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {ILemonJet} from "./interfaces/ILemonJet.sol";
-import {Vault} from "./Vault.sol";
+import {VaultUpgradeable} from "./VaultUpgradeable.sol";
 import {Referral} from "./Referral.sol";
 import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-contract LemonJet is
+contract LemonJetUpgradeable is
     ILemonJet,
     Referral,
-    Vault,
+    VaultUpgradeable,
     VRFV2PlusWrapperConsumerBaseUpgradeable,
     OwnableUpgradeable,
     UUPSUpgradeable
@@ -54,7 +54,7 @@ contract LemonJet is
         string memory _symbol
     ) public initializer {
         VRFV2PlusWrapperConsumerBaseUpgradeable.initialize(wrapperAddress);
-        Vault.initialize(_asset, _reserveFund, _name, _symbol);
+        VaultUpgradeable.initialize(_asset, _reserveFund, _name, _symbol);
         __Ownable_init(msg.sender);
     }
 
@@ -127,7 +127,7 @@ contract LemonJet is
         // check if a player has won
         if (randomNumber <= gameThreshold) {
             /**
-             * @dev See {Vault-_payoutWin}.
+             * @dev See {VaultUpgradeable-_payoutWin}.
              */
             _payoutWin(player, payout);
         } else {
