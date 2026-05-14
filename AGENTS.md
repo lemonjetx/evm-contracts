@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `src/` Solidity contracts (e.g., `LemonJetUpgradeable.sol`, `VaultUpgradeable.sol`); interfaces live in `src/interfaces/`.
+- `src/` Solidity contracts (e.g., `LemonJet.sol`, `Vault.sol`); interfaces live in `src/interfaces/`.
 - `test/` Foundry tests (`*.t.sol`) and `test/mocks/` for mock contracts.
 - `script/` Foundry scripts (`*.s.sol`) with helpers in `script/utils/`.
 - `broadcast/` deployment artifacts per script/chain, `out/` build outputs, `cache/` local build cache.
@@ -18,7 +18,7 @@
 ## Coding Style & Naming Conventions
 - Solidity version is 0.8.28 (`foundry.toml`); keep `pragma solidity ^0.8.28`.
 - Use 4-space indentation and let `forge fmt` normalize spacing/imports.
-- Contracts and files use PascalCase (`LemonJetUpgradeable.sol`), functions use camelCase.
+- Contracts and files use PascalCase (`LemonJet.sol`), functions use camelCase.
 - Tests are `*.t.sol` with `*Test` contracts; revert cases often use `test_RevertWhen_...`.
 
 ## Testing Guidelines
@@ -227,7 +227,6 @@ libs = ["lib"]
 dynamic_test_linking = true  # Enable for faster compilation
 remappings = [
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
-    "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
     "@chimera/=lib/chimera/src/"
 ]
  

@@ -1,19 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import {LinkTokenInterface} from "@chainlink-contracts-1.2.0/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
 import {IVRFV2PlusWrapper} from "@chainlink-contracts-1.2.0/src/v0.8/vrf/dev/interfaces/IVRFV2PlusWrapper.sol";
-import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-abstract contract VRFV2PlusWrapperConsumerBaseUpgradeable is Initializable {
+abstract contract VRFV2PlusWrapperConsumerBase {
     error OnlyVRFWrapperCanFulfill(address have, address want);
+    error ZeroVRFWrapper();
+    error VRFWrapperNotContract(address wrapper);
 
     IVRFV2PlusWrapper public i_vrfV2PlusWrapper;
 
     /**
      * @param _vrfV2PlusWrapper is the address of the VRFV2Wrapper contract
      */
-    function initialize(address _vrfV2PlusWrapper) internal onlyInitializing {
+    constructor(address _vrfV2PlusWrapper) {
+        if (_vrfV2PlusWrapper == address(0)) revert ZeroVRFWrapper();
+        if (_vrfV2PlusWrapper.code.length == 0) revert VRFWrapperNotContract(_vrfV2PlusWrapper);
+
         i_vrfV2PlusWrapper = IVRFV2PlusWrapper(_vrfV2PlusWrapper);
     }
 

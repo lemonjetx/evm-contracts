@@ -3,25 +3,17 @@ pragma solidity 0.8.28;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {VRFV2PlusWrapperConsumerBaseUpgradeable} from "./VRFV2PlusWrapperConsumerBaseUpgradeable.sol";
+import {VRFV2PlusWrapperConsumerBase} from "./VRFV2PlusWrapperConsumerBase.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {ILemonJet} from "./interfaces/ILemonJet.sol";
-import {VaultUpgradeable} from "./VaultUpgradeable.sol";
+import {Vault} from "./Vault.sol";
 import {Referral} from "./Referral.sol";
-import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
-import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-contract LemonJetUpgradeable is
-    ILemonJet,
-    ReentrancyGuardTransient,
-    Referral,
-    VaultUpgradeable,
-    VRFV2PlusWrapperConsumerBaseUpgradeable,
-    OwnableUpgradeable,
-    UUPSUpgradeable
-{
+contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2PlusWrapperConsumerBase {
     using SafeERC20 for IERC20;
+    using SafeCast for uint256;
 
     uint8 private constant STARTED = 1;
     uint8 private constant RELEASED = 2;
@@ -44,12 +36,7 @@ contract LemonJetUpgradeable is
         uint8 status; // 0, 1, 2
     }
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
-    }
-
-    function initialize(
+    constructor(
         //  VRF Wrapper 2.5 for Direct Funding
         address wrapperAddress,
         // EOA which receives a fee
@@ -60,11 +47,7 @@ contract LemonJetUpgradeable is
         string memory _name,
         // Vault shares token symbol
         string memory _symbol
-    ) public initializer {
-        VRFV2PlusWrapperConsumerBaseUpgradeable.initialize(wrapperAddress);
-        VaultUpgradeable.initialize(_asset, _reserveFund, _name, _symbol);
-        __Ownable_init(msg.sender);
-    }
+    ) Vault(_asset, _reserveFund, _name, _symbol) VRFV2PlusWrapperConsumerBase(wrapperAddress) {}
 
     function play(uint256 bet, uint32 coef, address referrer) external payable nonReentrant {
         referrer = _setReferrerIfNotExists(referrer);
@@ -105,8 +88,8 @@ contract LemonJetUpgradeable is
         uint256 reserveFundFee = Math.mulDiv(bet, 20, 10_000); // 0.2% of bet
         _mintByAssets(reserveFund, reserveFundFee);
 
-        game.payout = uint224(payout);
-        game.threshold = uint24(gameThreshold);
+        game.payout = payout.toUint224();
+        game.threshold = gameThreshold.toUint24();
         game.status = STARTED;
 
         emit GameStarted(requestId, player, bet, coef);
@@ -135,7 +118,7 @@ contract LemonJetUpgradeable is
         // check if a player has won
         if (randomNumber <= gameThreshold) {
             /**
-             * @dev See {VaultUpgradeable-_payoutWin}.
+             * @dev See {Vault-_payoutWin}.
              */
             _payoutWin(player, payout);
         } else {
@@ -179,7 +162,4 @@ contract LemonJetUpgradeable is
     function claimNativeBalance() external {
         payable(reserveFund).transfer(address(this).balance);
     }
-
-    /// @dev Required by UUPSUpgradeable - only owner can upgrade
-    function _authorizeUpgrade(address newImplementation) internal virtual override onlyOwner {}
 }

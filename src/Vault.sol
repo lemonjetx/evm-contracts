@@ -2,24 +2,30 @@
 pragma solidity 0.8.28;
 
 import {IVault} from "./interfaces/IVault.sol";
-import {ERC4626FeesUpgradeable} from "./ERC4626Fees.sol";
+import {ERC4626Fees} from "./ERC4626Fees.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
-contract VaultUpgradeable is IVault, ERC4626FeesUpgradeable {
+contract Vault is IVault, ERC4626Fees {
+    error ZeroReserveFund();
+    error ZeroAsset();
+    error AssetNotContract(address asset);
+
     uint256 private constant _reserveFundFeeBasisPoints = 10; // 0.1%
     address public reserveFund;
 
     using SafeERC20 for IERC20;
 
-    function initialize(IERC20 _asset, address _reserveFund, string memory _name, string memory _symbol)
-        public
-        virtual
-        onlyInitializing
+    constructor(IERC20 _asset, address _reserveFund, string memory _name, string memory _symbol)
+        ERC20(_name, _symbol)
+        ERC4626Fees(_asset)
     {
-        __ERC4626_init(_asset);
-        __ERC20_init(_name, _symbol);
+        if (address(_asset) == address(0)) revert ZeroAsset();
+        if (address(_asset).code.length == 0) revert AssetNotContract(address(_asset));
+        if (_reserveFund == address(0)) revert ZeroReserveFund();
+
         reserveFund = _reserveFund;
     }
 
@@ -28,7 +34,7 @@ contract VaultUpgradeable is IVault, ERC4626FeesUpgradeable {
      */
     function withdraw(uint256 assets, address receiver, address owner)
         public
-        override(IERC4626, ERC4626FeesUpgradeable)
+        override(IERC4626, ERC4626Fees)
         returns (uint256)
     {
         uint256 shares = super.withdraw(assets, receiver, owner);
@@ -42,7 +48,7 @@ contract VaultUpgradeable is IVault, ERC4626FeesUpgradeable {
      */
     function redeem(uint256 shares, address receiver, address owner)
         public
-        override(IERC4626, ERC4626FeesUpgradeable)
+        override(IERC4626, ERC4626Fees)
         returns (uint256)
     {
         uint256 assets = super.redeem(shares, receiver, owner);

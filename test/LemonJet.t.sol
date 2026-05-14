@@ -2,11 +2,11 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {LemonJetUpgradeable} from "../src/LemonJetUpgradeable.sol";
+import {LemonJet} from "../src/LemonJet.sol";
+import {Vault} from "../src/Vault.sol";
 import {HelperContract} from "./HelperContract.sol";
-import {UnsafeUpgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {ILemonJet} from "../src/interfaces/ILemonJet.sol";
-import {VRFV2PlusWrapperConsumerBaseUpgradeable} from "../src/VRFV2PlusWrapperConsumerBaseUpgradeable.sol";
+import {VRFV2PlusWrapperConsumerBase} from "../src/VRFV2PlusWrapperConsumerBase.sol";
 
 import {MockLinkToken} from "@chainlink-contracts-1.2.0/src/v0.8/mocks/MockLinkToken.sol";
 
@@ -18,8 +18,7 @@ contract LemonJetTest is Test, HelperContract {
     address constant referralAddress = address(5);
     address constant newReferralAddress = address(6);
     ERC20Mock ljtToken;
-    ERC20Mock usdcToken;
-    LemonJetUpgradeable ljtGame;
+    LemonJet ljtGame;
 
     MockLinkToken private s_linkToken;
 
@@ -30,19 +29,7 @@ contract LemonJetTest is Test, HelperContract {
         s_wrapper = new MockVRFV2PlusWrapper(address(s_linkToken), address(1));
         ljtToken = new ERC20Mock();
 
-        // Deploy implementation directly for coverage testing
-        address implementation = address(new LemonJetUpgradeable());
-
-        // Deploy UUPS proxy using UnsafeUpgrades (recommended for coverage tests)
-        address proxy = UnsafeUpgrades.deployUUPSProxy(
-            implementation,
-            abi.encodeCall(
-                LemonJetUpgradeable.initialize,
-                (address(s_wrapper), reserveFund, IERC20(address(ljtToken)), "Vault LemonJet", "VLJT")
-            )
-        );
-
-        ljtGame = LemonJetUpgradeable(proxy);
+        ljtGame = new LemonJet(address(s_wrapper), reserveFund, IERC20(address(ljtToken)), "Vault LemonJet", "VLJT");
 
         ljtToken.mint(address(ljtGame), 500 ether);
         ljtToken.mint(player, 500 ether);
@@ -78,7 +65,7 @@ contract LemonJetTest is Test, HelperContract {
         vm.startPrank(player);
         vm.deal(player, 2 ether);
         ljtGame.play{value: 1 ether}(1 ether, 150, referralAddress);
-        vm.expectRevert(abi.encodeWithSignature("AlreadyInGame()"));
+        vm.expectRevert(ILemonJet.AlreadyInGame.selector);
         ljtGame.play{value: 1 ether}(1 ether, 150, referralAddress);
         vm.stopPrank();
     }
@@ -155,11 +142,10 @@ contract LemonJetTest is Test, HelperContract {
 
     function test_RevertWhen_BetAboveLimit() public {
         vm.prank(address(ljtGame));
-        ljtToken.transfer(address(10), 499 ether);
+        assertTrue(ljtToken.transfer(address(10), 499 ether));
 
         uint256 bet = 1 ether;
         uint32 coef = 150;
-        uint256 gameThreshold = (1_000_000 / uint256(coef)) * 99 / 100;
         uint256 maxWin = ljtGame.maxWinAmount();
 
         vm.prank(player);
@@ -173,12 +159,41 @@ contract LemonJetTest is Test, HelperContract {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                VRFV2PlusWrapperConsumerBaseUpgradeable.OnlyVRFWrapperCanFulfill.selector,
-                address(this),
-                address(s_wrapper)
+                VRFV2PlusWrapperConsumerBase.OnlyVRFWrapperCanFulfill.selector, address(this), address(s_wrapper)
             )
         );
         ljtGame.rawFulfillRandomWords(1, randomWords);
+    }
+
+    function test_RevertWhen_ConstructorReserveFundIsZero() public {
+        vm.expectRevert(Vault.ZeroReserveFund.selector);
+        new LemonJet(address(s_wrapper), address(0), IERC20(address(ljtToken)), "Vault LemonJet", "VLJT");
+    }
+
+    function test_RevertWhen_ConstructorAssetIsZero() public {
+        vm.expectRevert(Vault.ZeroAsset.selector);
+        new LemonJet(address(s_wrapper), reserveFund, IERC20(address(0)), "Vault LemonJet", "VLJT");
+    }
+
+    function test_RevertWhen_ConstructorAssetIsNotContract() public {
+        address nonContractAsset = address(0xBEEF);
+
+        vm.expectRevert(abi.encodeWithSelector(Vault.AssetNotContract.selector, nonContractAsset));
+        new LemonJet(address(s_wrapper), reserveFund, IERC20(nonContractAsset), "Vault LemonJet", "VLJT");
+    }
+
+    function test_RevertWhen_ConstructorWrapperIsZero() public {
+        vm.expectRevert(VRFV2PlusWrapperConsumerBase.ZeroVRFWrapper.selector);
+        new LemonJet(address(0), reserveFund, IERC20(address(ljtToken)), "Vault LemonJet", "VLJT");
+    }
+
+    function test_RevertWhen_ConstructorWrapperIsNotContract() public {
+        address nonContractWrapper = address(0xCAFE);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(VRFV2PlusWrapperConsumerBase.VRFWrapperNotContract.selector, nonContractWrapper)
+        );
+        new LemonJet(nonContractWrapper, reserveFund, IERC20(address(ljtToken)), "Vault LemonJet", "VLJT");
     }
 
     function testClaimNativeBalanceTransfersToReserveFund() public {
