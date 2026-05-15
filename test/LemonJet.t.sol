@@ -140,6 +140,19 @@ contract LemonJetTest is Test, HelperContract {
         ljtGame.play(1000, 5000_01, referralAddress);
     }
 
+    function testPlayLjt_MaxMultiplierUsesHighPrecisionThreshold() public {
+        uint256 bet = 1000;
+        uint32 coef = 5000_00;
+
+        vm.prank(player);
+        vm.deal(player, 1 ether);
+        ljtGame.play{value: 1 ether}(bet, coef);
+
+        (, uint256 gameThreshold, uint8 status) = ljtGame.latestGames(player);
+        assertEq(gameThreshold, 19_800);
+        assertEq(status, 1);
+    }
+
     function test_RevertWhen_BetAboveLimit() public {
         vm.prank(address(ljtGame));
         assertTrue(ljtToken.transfer(address(10), 499 ether));

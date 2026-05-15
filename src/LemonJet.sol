@@ -24,15 +24,15 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
     uint16 private constant REQUEST_CONFIRMATIONS = 0;
     uint32 private constant NUM_WORDS = 1;
 
-    uint256 private constant houseEdge = 1; // %
-    uint256 private constant threshold = 1e6;
+    uint256 private constant HOUSE_EDGE_PERCENT = 1;
+    uint256 private constant RANDOM_RANGE = 100_000_000;
     mapping(address => JetGame) public latestGames;
     mapping(uint256 => address) public requestIdToPlayer;
 
     // 1 storage slot
     struct JetGame {
-        uint224 payout;
-        uint24 threshold; // always less than threshold (1_000_000)
+        uint216 payout;
+        uint32 threshold; // always less than RANDOM_RANGE
         uint8 status; // 0, 1, 2
     }
 
@@ -88,17 +88,15 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
         uint256 reserveFundFee = Math.mulDiv(bet, 20, 10_000); // 0.2% of bet
         _mintByAssets(reserveFund, reserveFundFee);
 
-        game.payout = payout.toUint224();
-        game.threshold = gameThreshold.toUint24();
+        game.payout = payout.toUint216();
+        game.threshold = gameThreshold.toUint32();
         game.status = STARTED;
 
         emit GameStarted(requestId, player, bet, coef);
     }
 
     function calcThresholdForCoef(uint256 coef) private pure returns (uint256) {
-        uint256 baseThreshold = threshold / coef;
-        uint256 adjustedThreshold = (baseThreshold * (100 - houseEdge)) / 100;
-        return adjustedThreshold;
+        return Math.mulDiv(RANDOM_RANGE, 100 - HOUSE_EDGE_PERCENT, coef);
     }
 
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
@@ -113,7 +111,7 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
         uint256 gameThreshold = game.threshold;
         uint256 payout = game.payout;
 
-        randomNumber = (randomNumber % 10_000) + 1;
+        randomNumber = (randomNumber % RANDOM_RANGE) + 1;
 
         // check if a player has won
         if (randomNumber <= gameThreshold) {
@@ -133,7 +131,7 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
             player,
             payout,
             randomNumber,
-            (threshold * (100 - houseEdge)) / 100 / randomNumber // the maximum coef that could win and give profit
+            Math.mulDiv(RANDOM_RANGE, 100 - HOUSE_EDGE_PERCENT, randomNumber) // max profitable coef
         );
     }
 
