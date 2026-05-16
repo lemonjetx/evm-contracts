@@ -120,6 +120,20 @@ with referrer: +1.0% - 0.2% - 0.3% = +0.5% of bet
 
 This is an expected-value model. Realized LP returns depend on variance, active pending games, vault size, exit timing, and the distribution of chosen multipliers.
 
+### LP Yield Flow
+
+Player losses remain in the vault as extra `totalAssets`, which increases assets per share. Player wins transfer `payout` out of the vault, which decreases assets per share.
+
+```text
+assetsPerShare = totalAssets / totalSupply
+LP value = sharesOwned * assetsPerShare
+```
+
+```text
+player loss -> vault keeps bet -> totalAssets rises -> LP share value rises
+player win  -> vault pays payout -> totalAssets falls -> LP share value falls
+```
+
 ## Risk Cap
 
 Each game records two pending liability values:
@@ -181,6 +195,27 @@ withdrawableAssets = max(totalAssets - totalPendingPayouts, 0)
 ```
 
 `maxWithdraw()` and `maxRedeem()` both respect this pending payout reserve.
+
+### Pending Payout Withdrawal Protection
+
+Pending payout reservation prevents LP withdrawals from front-running unresolved winning bets:
+
+```text
+1. Player starts game with possible payout P.
+2. LP tries to withdraw before VRF callback settles.
+3. Contract excludes P from withdrawable assets.
+4. If player wins, payout remains available.
+```
+
+Implementation constraints:
+
+```text
+withdrawableAssets = max(totalAssets - totalPendingPayouts, 0)
+maxWithdraw(owner) <= withdrawableAssets
+maxRedeem(owner) converted through previewRedeem also respects withdrawableAssets
+```
+
+This protects reserved pending payouts. It does not protect LPs from normal game variance after games settle.
 
 The ERC4626 exit fee is:
 
