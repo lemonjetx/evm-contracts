@@ -15,7 +15,7 @@ contract LemonJetDeployScript is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        LemonJet lemonJet = new LemonJet(vrfWrapper, reserveFund, IERC20(vaultToken), "LemonJet Vault", "LJUSDC");
+        LemonJet lemonJet = new LemonJet(vrfWrapper, reserveFund, IERC20(vaultToken), "LemonJet LP", "lpLJT");
 
         console2.log("LemonJet deployed at:", address(lemonJet));
 
