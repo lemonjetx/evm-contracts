@@ -15,8 +15,9 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract LemonJetTest is Test, HelperContract {
-    address constant referralAddress = address(5);
-    address constant newReferralAddress = address(6);
+    address constant referralAddress = address(0x1005);
+    address constant newReferralAddress = address(0x1006);
+    address constant liquidityProvider = address(0x1007);
     ERC20Mock ljtToken;
     LemonJet ljtGame;
 
@@ -31,7 +32,10 @@ contract LemonJetTest is Test, HelperContract {
 
         ljtGame = new LemonJet(address(s_wrapper), reserveFund, IERC20(address(ljtToken)), "Vault LemonJet", "VLJT");
 
-        ljtToken.mint(address(ljtGame), 500 ether);
+        _fundAndApprove(ljtGame, liquidityProvider, 500 ether);
+        vm.prank(liquidityProvider);
+        ljtGame.deposit(500 ether, liquidityProvider);
+
         ljtToken.mint(player, 500 ether);
         vm.prank(player);
         ljtToken.approve(address(ljtGame), UINT256_MAX);
@@ -199,9 +203,9 @@ contract LemonJetTest is Test, HelperContract {
     }
 
     function test_RevertWhen_AggregateHalfKellyCapacityExceeded() public {
-        address firstPlayer = address(11);
-        address secondPlayer = address(12);
-        address thirdPlayer = address(13);
+        address firstPlayer = address(0x1011);
+        address secondPlayer = address(0x1012);
+        address thirdPlayer = address(0x1013);
         uint256 bet = 1 ether;
         uint32 coef = 200;
 
@@ -239,19 +243,19 @@ contract LemonJetTest is Test, HelperContract {
     function testPlayLjt_PendingPayoutsAreNotWithdrawable() public {
         LemonJet game =
             new LemonJet(address(s_wrapper), reserveFund, IERC20(address(ljtToken)), "Vault LemonJet", "VLJT");
-        address liquidityProvider = address(14);
-        address gamePlayer = address(15);
+        address secondLiquidityProvider = address(0x1014);
+        address gamePlayer = address(0x1015);
 
-        _fundAndApprove(game, liquidityProvider, 500 ether);
-        vm.prank(liquidityProvider);
-        game.deposit(500 ether, liquidityProvider);
+        _fundAndApprove(game, secondLiquidityProvider, 500 ether);
+        vm.prank(secondLiquidityProvider);
+        game.deposit(500 ether, secondLiquidityProvider);
 
         _fundAndApprove(game, gamePlayer, 1 ether);
         _play(game, gamePlayer, 1 ether, 200);
 
         assertEq(game.totalPendingPayouts(), 2 ether);
-        assertLe(game.maxWithdraw(liquidityProvider), 499 ether);
-        assertLe(game.previewRedeem(game.maxRedeem(liquidityProvider)), 499 ether);
+        assertLe(game.maxWithdraw(secondLiquidityProvider), 499 ether);
+        assertLe(game.previewRedeem(game.maxRedeem(secondLiquidityProvider)), 499 ether);
     }
 
     function test_RevertWhen_BetAboveLimit() public {
@@ -317,6 +321,18 @@ contract LemonJetTest is Test, HelperContract {
         ljtGame.claimNativeBalance();
 
         assertEq(reserveFund.balance, beforeReserveBalance + 2 ether);
+        assertEq(address(ljtGame).balance, 0);
+    }
+
+    function testPlayLjt_RefundsExcessNativePayment() public {
+        uint256 requestPrice = s_wrapper.calculateRequestPriceNative(100_000, 1);
+        uint256 excess = 0.1 ether;
+        vm.deal(player, requestPrice + excess);
+
+        vm.prank(player);
+        ljtGame.play{value: requestPrice + excess}(1000, 150);
+
+        assertEq(player.balance, excess);
         assertEq(address(ljtGame).balance, 0);
     }
 

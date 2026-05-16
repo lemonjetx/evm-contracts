@@ -51,6 +51,10 @@ $ anvil
 $ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
 ```
 
+### Bankroll
+
+Initial game liquidity must be supplied through the LemonJet ERC4626 `deposit` or `mint` flow. Do not direct-transfer the game token to the LemonJet contract for bankroll seeding; direct transfers are unsupported accounting donations.
+
 ### Cast
 
 ```shell

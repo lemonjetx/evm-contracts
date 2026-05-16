@@ -19,8 +19,8 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
     uint8 private constant STARTED = 1;
     uint8 private constant RELEASED = 2;
 
-    // foundry gas report estimate the `rawFulfillRandomWords` at 47738
-    uint32 private constant CALLBACK_GAS_LIMIT = 50_000;
+    // foundry gas report estimates `rawFulfillRandomWords` above 50k in win/loss paths
+    uint32 private constant CALLBACK_GAS_LIMIT = 100_000;
     // zero block confirmations need to get a random number as fast as possible because and chain reorganization can't negatively affect
     uint16 private constant REQUEST_CONFIRMATIONS = 0;
     uint32 private constant NUM_WORDS = 1;
@@ -80,7 +80,7 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
         JetGame storage game = latestGames[player];
         require(game.status != STARTED, AlreadyInGame()); // parallel games are not supported
         IERC20(asset()).safeTransferFrom(player, address(this), bet);
-        uint256 requestId = _requestRandomWord();
+        (uint256 requestId, uint256 requestPrice) = _requestRandomWord();
         requestIdToPlayer[requestId] = player;
 
         // if referrer exists, issue vault shares by 0.3% of bet
@@ -100,6 +100,8 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
         game.potentialWinnings = potentialWinnings.toUint104();
         game.threshold = gameThreshold.toUint32();
         game.status = STARTED;
+
+        _refundExcessNative(player, requestPrice);
 
         emit GameStarted(requestId, player, bet, coef);
     }
@@ -185,7 +187,7 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
         return assets - pendingPayouts;
     }
 
-    function _requestRandomWord() private returns (uint256 requestId) {
+    function _requestRandomWord() private returns (uint256 requestId, uint256 requestPrice) {
         // // implimentation of the https://github.com/smartcontractkit/chainlink/blob/develop/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol#L21
 
         bytes memory extraArgs;
@@ -197,12 +199,18 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
             mstore(0x40, add(extraArgs, 0x60)) // update free pointer
         }
 
-        uint256 requestPrice = i_vrfV2PlusWrapper.calculateRequestPriceNative(CALLBACK_GAS_LIMIT, NUM_WORDS);
+        requestPrice = i_vrfV2PlusWrapper.calculateRequestPriceNative(CALLBACK_GAS_LIMIT, NUM_WORDS);
 
         require(msg.value >= requestPrice, FeeTooLow(requestPrice));
 
         requestId =
             requestRandomnessPayInNative(CALLBACK_GAS_LIMIT, REQUEST_CONFIRMATIONS, NUM_WORDS, extraArgs, requestPrice);
+    }
+
+    function _refundExcessNative(address player, uint256 requestPrice) private {
+        uint256 refund = msg.value - requestPrice;
+        if (refund == 0) return;
+        payable(player).call{value: refund}("");
     }
 
     /// @notice sending accumulated native tokens to the `reserveFund`
