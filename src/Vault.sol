@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {IVault} from "./interfaces/IVault.sol";
 import {ERC4626Fees} from "./ERC4626Fees.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
-contract Vault is IVault, ERC4626Fees {
+contract Vault is ERC4626Fees {
     error ZeroReserveFund();
     error ZeroAsset();
     error AssetNotContract(address asset);
@@ -32,11 +30,7 @@ contract Vault is IVault, ERC4626Fees {
     /**
      * @dev See {IERC4626-withdraw}.
      */
-    function withdraw(uint256 assets, address receiver, address owner)
-        public
-        override(IERC4626, ERC4626Fees)
-        returns (uint256)
-    {
+    function withdraw(uint256 assets, address receiver, address owner) public override(ERC4626Fees) returns (uint256) {
         uint256 shares = super.withdraw(assets, receiver, owner);
         // mint fee in shares to reserve fund
         _mint(reserveFund, _reserveFundFee(shares));
@@ -46,28 +40,17 @@ contract Vault is IVault, ERC4626Fees {
     /**
      * @dev See {IERC4626-redeem}.
      */
-    function redeem(uint256 shares, address receiver, address owner)
-        public
-        override(IERC4626, ERC4626Fees)
-        returns (uint256)
-    {
+    function redeem(uint256 shares, address receiver, address owner) public override(ERC4626Fees) returns (uint256) {
         uint256 assets = super.redeem(shares, receiver, owner);
         // mint fee in shares to reserve fund
         _mint(reserveFund, _reserveFundFee(shares));
         return assets;
     }
 
-    /// @dev returns the maximum amount of underlying assets that can be payout as win in a single game.
-
-    function maxWinAmount() public view returns (uint256) {
-        return (totalAssets() * _exitFeeBasisPoints) / _BASIS_POINT_SCALE;
-    }
-
     function _mintByAssets(address receiver, uint256 assets) internal {
         _mint(receiver, convertToShares(assets));
     }
 
-    /// @dev winnings may exceed `maxWinAmount()` at the start of this play. It's acceptable.
     function _payoutWin(address receiver, uint256 assets) internal {
         IERC20(asset()).safeTransfer(receiver, assets);
     }

@@ -45,8 +45,9 @@ contract LemonJetTest is Test, HelperContract {
 
         address _player = ljtGame.requestIdToPlayer(requestId);
 
-        (uint256 potentialWinnings,, uint8 statusBeforeRelease) = ljtGame.latestGames(player);
-        assertEq(potentialWinnings, (1 ether * 150) / 100);
+        (uint256 payout, uint256 potentialWinnings,, uint8 statusBeforeRelease) = ljtGame.latestGames(player);
+        assertEq(payout, (1 ether * 150) / 100);
+        assertEq(potentialWinnings, (1 ether * 50) / 100);
         assertEq(statusBeforeRelease, 1);
         assertEq(_player, player);
 
@@ -56,7 +57,7 @@ contract LemonJetTest is Test, HelperContract {
 
         ljtGame.rawFulfillRandomWords(requestId, randomWords);
 
-        (,, uint8 statusAfterRelease) = ljtGame.latestGames(player);
+        (,,, uint8 statusAfterRelease) = ljtGame.latestGames(player);
 
         assertEq(statusAfterRelease, 2);
     }
@@ -90,7 +91,7 @@ contract LemonJetTest is Test, HelperContract {
         uint256 afterBalance = ljtToken.balanceOf(player);
         assertEq(afterBalance, beforeBalance - bet + payout);
 
-        (,, uint8 status) = ljtGame.latestGames(player);
+        (,,, uint8 status) = ljtGame.latestGames(player);
         assertEq(status, 2);
         assertEq(ljtGame.requestIdToPlayer(requestId), address(0));
     }
@@ -148,9 +149,109 @@ contract LemonJetTest is Test, HelperContract {
         vm.deal(player, 1 ether);
         ljtGame.play{value: 1 ether}(bet, coef);
 
-        (, uint256 gameThreshold, uint8 status) = ljtGame.latestGames(player);
+        (,, uint256 gameThreshold, uint8 status) = ljtGame.latestGames(player);
         assertEq(gameThreshold, 19_800);
         assertEq(status, 1);
+    }
+
+    function testPlayLjt_TracksPendingRiskAndClearsAfterWin() public {
+        uint256 bet = 1 ether;
+        uint32 coef = 150;
+
+        vm.prank(player);
+        vm.deal(player, 1 ether);
+        ljtGame.play{value: 1 ether}(bet, coef);
+        uint256 requestId = s_wrapper.lastRequestId();
+
+        assertEq(ljtGame.totalPendingPayouts(), 1.5 ether);
+        assertEq(ljtGame.totalPendingWinnings(), 0.5 ether);
+
+        uint256[] memory randomWords = new uint256[](1);
+        randomWords[0] = 0;
+
+        vm.prank(address(s_wrapper));
+        ljtGame.rawFulfillRandomWords(requestId, randomWords);
+
+        assertEq(ljtGame.totalPendingPayouts(), 0);
+        assertEq(ljtGame.totalPendingWinnings(), 0);
+    }
+
+    function testPlayLjt_TracksPendingRiskAndClearsAfterLoss() public {
+        uint256 bet = 1 ether;
+        uint32 coef = 150;
+
+        vm.prank(player);
+        vm.deal(player, 1 ether);
+        ljtGame.play{value: 1 ether}(bet, coef);
+        uint256 requestId = s_wrapper.lastRequestId();
+
+        assertEq(ljtGame.totalPendingPayouts(), 1.5 ether);
+        assertEq(ljtGame.totalPendingWinnings(), 0.5 ether);
+
+        uint256[] memory randomWords = new uint256[](1);
+        randomWords[0] = 99_999_999;
+
+        vm.prank(address(s_wrapper));
+        ljtGame.rawFulfillRandomWords(requestId, randomWords);
+
+        assertEq(ljtGame.totalPendingPayouts(), 0);
+        assertEq(ljtGame.totalPendingWinnings(), 0);
+    }
+
+    function test_RevertWhen_AggregateHalfKellyCapacityExceeded() public {
+        address firstPlayer = address(11);
+        address secondPlayer = address(12);
+        address thirdPlayer = address(13);
+        uint256 bet = 1 ether;
+        uint32 coef = 200;
+
+        _fundAndApprove(ljtGame, firstPlayer, bet);
+        _fundAndApprove(ljtGame, secondPlayer, bet);
+        _fundAndApprove(ljtGame, thirdPlayer, bet);
+
+        _play(ljtGame, firstPlayer, bet, coef);
+        _play(ljtGame, secondPlayer, bet, coef);
+
+        uint256 maxWin = ljtGame.maxWinAmount();
+        assertEq(maxWin, 0.5 ether);
+        assertEq(ljtGame.totalPendingPayouts(), 4 ether);
+        assertEq(ljtGame.totalPendingWinnings(), 2 ether);
+
+        vm.prank(thirdPlayer);
+        vm.deal(thirdPlayer, 1 ether);
+        vm.expectRevert(abi.encodeWithSelector(ILemonJet.BetAmountAboveLimit.selector, maxWin));
+        ljtGame.play{value: 1 ether}(bet, coef);
+    }
+
+    function testPlayLjt_PendingBetPrincipalDoesNotIncreaseRiskCapacity() public {
+        uint256 bet = 100 ether;
+        uint32 coef = 1_01;
+
+        vm.prank(player);
+        vm.deal(player, 1 ether);
+        ljtGame.play{value: 1 ether}(bet, coef);
+
+        assertEq(ljtGame.totalPendingPayouts(), 101 ether);
+        assertEq(ljtGame.totalPendingWinnings(), 1 ether);
+        assertEq(ljtGame.maxWinAmount(), 1.5 ether);
+    }
+
+    function testPlayLjt_PendingPayoutsAreNotWithdrawable() public {
+        LemonJet game =
+            new LemonJet(address(s_wrapper), reserveFund, IERC20(address(ljtToken)), "Vault LemonJet", "VLJT");
+        address liquidityProvider = address(14);
+        address gamePlayer = address(15);
+
+        _fundAndApprove(game, liquidityProvider, 500 ether);
+        vm.prank(liquidityProvider);
+        game.deposit(500 ether, liquidityProvider);
+
+        _fundAndApprove(game, gamePlayer, 1 ether);
+        _play(game, gamePlayer, 1 ether, 200);
+
+        assertEq(game.totalPendingPayouts(), 2 ether);
+        assertLe(game.maxWithdraw(liquidityProvider), 499 ether);
+        assertLe(game.previewRedeem(game.maxRedeem(liquidityProvider)), 499 ether);
     }
 
     function test_RevertWhen_BetAboveLimit() public {
@@ -217,5 +318,17 @@ contract LemonJetTest is Test, HelperContract {
 
         assertEq(reserveFund.balance, beforeReserveBalance + 2 ether);
         assertEq(address(ljtGame).balance, 0);
+    }
+
+    function _fundAndApprove(LemonJet game, address account, uint256 amount) private {
+        ljtToken.mint(account, amount);
+        vm.prank(account);
+        ljtToken.approve(address(game), UINT256_MAX);
+    }
+
+    function _play(LemonJet game, address account, uint256 bet, uint32 coef) private {
+        vm.prank(account);
+        vm.deal(account, 1 ether);
+        game.play{value: 1 ether}(bet, coef);
     }
 }

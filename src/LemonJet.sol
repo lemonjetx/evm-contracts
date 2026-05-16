@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import {VRFV2PlusWrapperConsumerBase} from "./VRFV2PlusWrapperConsumerBase.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -24,14 +25,19 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
     uint16 private constant REQUEST_CONFIRMATIONS = 0;
     uint32 private constant NUM_WORDS = 1;
 
-    uint256 private constant HOUSE_EDGE_PERCENT = 1;
+    uint256 private constant BASIS_POINT_SCALE = 100_00;
+    uint256 private constant HOUSE_EDGE_BPS = 100;
+    uint256 private constant HALF_KELLY_BPS = 50;
     uint256 private constant RANDOM_RANGE = 100_000_000;
+    uint128 public totalPendingPayouts;
+    uint128 public totalPendingWinnings;
     mapping(address => JetGame) public latestGames;
     mapping(uint256 => address) public requestIdToPlayer;
 
     // 1 storage slot
     struct JetGame {
-        uint216 payout;
+        uint112 payout;
+        uint104 potentialWinnings;
         uint32 threshold; // always less than RANDOM_RANGE
         uint8 status; // 0, 1, 2
     }
@@ -79,16 +85,19 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
 
         // if referrer exists, issue vault shares by 0.3% of bet
         if (referrer != address(0)) {
-            uint256 referrerReward = Math.mulDiv(bet, 30, 10_000); // 0.3% of bet
+            uint256 referrerReward = Math.mulDiv(bet, 30, BASIS_POINT_SCALE); // 0.3% of bet
             _mintByAssets(referrer, referrerReward);
             emit ReferrerRewardIssued(referrer, player, referrerReward);
         }
 
         // issue vault shares by 0.2% of bet
-        uint256 reserveFundFee = Math.mulDiv(bet, 20, 10_000); // 0.2% of bet
+        uint256 reserveFundFee = Math.mulDiv(bet, 20, BASIS_POINT_SCALE); // 0.2% of bet
         _mintByAssets(reserveFund, reserveFundFee);
 
-        game.payout = payout.toUint216();
+        _reservePendingRisk(payout, potentialWinnings);
+
+        game.payout = payout.toUint112();
+        game.potentialWinnings = potentialWinnings.toUint104();
         game.threshold = gameThreshold.toUint32();
         game.status = STARTED;
 
@@ -96,7 +105,24 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
     }
 
     function calcThresholdForCoef(uint256 coef) private pure returns (uint256) {
-        return Math.mulDiv(RANDOM_RANGE, 100 - HOUSE_EDGE_PERCENT, coef);
+        return Math.mulDiv(RANDOM_RANGE, (BASIS_POINT_SCALE - HOUSE_EDGE_BPS) * 100, BASIS_POINT_SCALE * coef);
+    }
+
+    function maxWinAmount() public view returns (uint256) {
+        uint256 maxAggregatePendingWinnings = Math.mulDiv(_settledBankroll(), HALF_KELLY_BPS, BASIS_POINT_SCALE);
+        uint256 pendingWinnings = totalPendingWinnings;
+        if (pendingWinnings >= maxAggregatePendingWinnings) return 0;
+        return maxAggregatePendingWinnings - pendingWinnings;
+    }
+
+    function maxWithdraw(address owner) public view override(ERC4626) returns (uint256) {
+        return Math.min(previewRedeem(super.maxRedeem(owner)), _withdrawableAssets());
+    }
+
+    function maxRedeem(address owner) public view override(ERC4626) returns (uint256) {
+        uint256 shares = super.maxRedeem(owner);
+        if (previewRedeem(shares) <= _withdrawableAssets()) return shares;
+        return previewWithdraw(_withdrawableAssets());
     }
 
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
@@ -110,8 +136,11 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
         JetGame storage game = latestGames[player];
         uint256 gameThreshold = game.threshold;
         uint256 payout = game.payout;
+        uint256 potentialWinnings = game.potentialWinnings;
 
         randomNumber = (randomNumber % RANDOM_RANGE) + 1;
+
+        _releasePendingRisk(payout, potentialWinnings);
 
         // check if a player has won
         if (randomNumber <= gameThreshold) {
@@ -131,8 +160,29 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
             player,
             payout,
             randomNumber,
-            Math.mulDiv(RANDOM_RANGE, 100 - HOUSE_EDGE_PERCENT, randomNumber) // max profitable coef
+            Math.mulDiv(RANDOM_RANGE, (BASIS_POINT_SCALE - HOUSE_EDGE_BPS) * 100, BASIS_POINT_SCALE * randomNumber) // max profitable coef
         );
+    }
+
+    function _reservePendingRisk(uint256 payout, uint256 potentialWinnings) private {
+        totalPendingPayouts = (uint256(totalPendingPayouts) + payout).toUint128();
+        totalPendingWinnings = (uint256(totalPendingWinnings) + potentialWinnings).toUint128();
+    }
+
+    function _releasePendingRisk(uint256 payout, uint256 potentialWinnings) private {
+        totalPendingPayouts -= payout.toUint128();
+        totalPendingWinnings -= potentialWinnings.toUint128();
+    }
+
+    function _settledBankroll() private view returns (uint256) {
+        return totalAssets() + totalPendingWinnings - totalPendingPayouts;
+    }
+
+    function _withdrawableAssets() private view returns (uint256) {
+        uint256 assets = totalAssets();
+        uint256 pendingPayouts = totalPendingPayouts;
+        if (pendingPayouts >= assets) return 0;
+        return assets - pendingPayouts;
     }
 
     function _requestRandomWord() private returns (uint256 requestId) {
