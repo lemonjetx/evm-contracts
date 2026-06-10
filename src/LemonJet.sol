@@ -21,7 +21,9 @@ contract LemonJet is ILemonJet, ReentrancyGuardTransient, Referral, Vault, VRFV2
 
     // foundry gas report estimates `rawFulfillRandomWords` above 50k in win/loss paths
     uint32 private constant CALLBACK_GAS_LIMIT = 100_000;
-    // zero block confirmations need to get a random number as fast as possible because and chain reorganization can't negatively affect
+    // zero confirmations optimizes latency. If a request tx is reorged out,
+    // the canonical coordinator/wrapper has no request commitment/callback, so it should not
+    // fulfill that orphaned request
     uint16 private constant REQUEST_CONFIRMATIONS = 0;
     uint32 private constant NUM_WORDS = 1;
 
